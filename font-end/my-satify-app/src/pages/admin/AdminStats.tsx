@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Container, Grid, Paper, Typography, Stack, Divider, Chip, LinearProgress, Box, TextField, MenuItem } from "@mui/material";
+import dayjs, { Dayjs } from 'dayjs';
 import api from "../../api/axiosClient";
 import { formatCurrency } from "../../utils/format";
 interface RevenueDaily { date: string; total: number }
@@ -20,6 +21,8 @@ export default function AdminStats() {
   const [best, setBest] = useState<BestSeller[]>([]);
   const [bestCategory, setBestCategory] = useState<string>('');
   const [dailyDays, setDailyDays] = useState<number>(14);
+  const [from, setFrom] = useState<string>('');
+  const [to, setTo] = useState<string>('');
 
   useEffect(() => {
     let mounted = true;
@@ -59,12 +62,15 @@ export default function AdminStats() {
     let mounted = true;
     (async () => {
       try {
-        const dailyRes = await api.get<{ data: RevenueDaily[] }>("/stats/revenue_daily", { params: { days: dailyDays } });
+        const params: any = {};
+        if (from && to) { params.from = from; params.to = to; }
+        else { params.days = dailyDays; }
+        const dailyRes = await api.get<{ data: RevenueDaily[] }>("/stats/revenue_daily", { params });
         if (mounted) setDaily(dailyRes.data.data || []);
       } catch {}
     })();
     return () => { mounted = false; };
-  }, [dailyDays]);
+  }, [dailyDays, from, to]);
 
   if (loading) return <LinearProgress sx={{ mt: 2 }} />;
   if (error) return <Typography color="error" sx={{ mt: 2 }}>{error}</Typography>;
@@ -96,11 +102,16 @@ export default function AdminStats() {
 
         <Grid item xs={12}>
           <Paper sx={{ p: 2.5, borderRadius: 3 }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ xs: 'stretch', md: 'center' }} justifyContent="space-between" sx={{ mb: 1 }} spacing={1}>
               <Typography variant="subtitle1" fontWeight={700}>Doanh thu theo ngày</Typography>
-              <TextField size="small" select value={dailyDays} onChange={(e) => setDailyDays(Number(e.target.value))}>
-                {[7,14,30,60].map((d) => <MenuItem key={d} value={d}>{d} ngày</MenuItem>)}
-              </TextField>
+              <Stack direction="row" spacing={1}>
+                <TextField size="small" type="date" label="Từ" InputLabelProps={{ shrink: true }} value={from} onChange={(e) => setFrom(e.target.value)} />
+                <TextField size="small" type="date" label="Đến" InputLabelProps={{ shrink: true }} value={to} onChange={(e) => setTo(e.target.value)} />
+                <TextField size="small" select value={dailyDays} onChange={(e) => setDailyDays(Number(e.target.value))} disabled={!!(from && to)}>
+                  {[7,14,30,60].map((d) => <MenuItem key={d} value={d}>{d} ngày</MenuItem>)}
+                </TextField>
+                <TextField size="small" value={''} onChange={() => {}} placeholder=" " sx={{ display: 'none' }} />
+              </Stack>
             </Stack>
             <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 200 }}>
               {(() => {
