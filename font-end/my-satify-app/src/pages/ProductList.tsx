@@ -29,6 +29,7 @@ export default function ProductList() {
     const limit = params.get('limit') || '12';
     const category = params.get('category') || '';
     const minRating = params.get('minRating') || '';
+    const onlyPurchased = params.get('onlyPurchased') === '1';
 
     // responsive
     const theme = useTheme();
@@ -218,6 +219,7 @@ export default function ProductList() {
         (minPrice && minPrice.length > 0) ||
         (maxPrice && maxPrice.length > 0) ||
         (minRating && minRating.length > 0) ||
+        onlyPurchased ||
         sort !== 'newest' ||
         limit !== '12'
     );
@@ -262,6 +264,7 @@ export default function ProductList() {
                     )}
                     {sort !== 'newest' && <Chip label={`Sắp xếp: ${sort === 'price_asc' ? 'Giá tăng' : 'Giá giảm'}`} onDelete={() => updateParam('sort', 'newest')} />}
                     {minRating && <Chip label={`Đánh giá: ≥ ${minRating}★`} onDelete={() => updateParam('minRating', '')} />}
+                    {onlyPurchased && <Chip label={`Chỉ đã mua`} onDelete={() => updateParam('onlyPurchased', '')} />}
                     {limit !== '12' && <Chip label={`Hiển thị: ${limit}/trang`} onDelete={() => updateParam('limit', '12')} />}
                 </Stack>
             )}
@@ -316,7 +319,7 @@ export default function ProductList() {
                             </Grid>
                         ))
                     ) : (
-                        list.map((p) => (
+                        list.filter((p) => !onlyPurchased || purchasedIds.has(p._id)).map((p) => (
                             <Grid item xs={12} sm={6} md={3} key={p._id}>
                                 <ProductCard id={p._id} name={p.name} price={p.price} image={p.image} ratingAvg={(p as any).ratingAvg} ratingCount={(p as any).ratingCount} purchased={purchasedIds.has(p._id)} />
                             </Grid>
@@ -365,6 +368,11 @@ export default function ProductList() {
                         <TextField select label="Đánh giá tối thiểu" value={draft.minRatingDraft} onChange={(e) => setDraft((d) => ({ ...d, minRatingDraft: e.target.value }))}>
                             {[5,4.5,4,3.5,3].map(v => <MenuItem key={v} value={String(v)}>{`≥ ${v}★`}</MenuItem>)}
                         </TextField>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                            <Button variant={onlyPurchased ? 'contained' : 'outlined'} onClick={() => updateParam('onlyPurchased', onlyPurchased ? '' : '1')}>
+                                {onlyPurchased ? 'Đang lọc: Chỉ đã mua' : 'Lọc: Chỉ đã mua'}
+                            </Button>
+                        </Stack>
                         <TextField select label="Hiển thị" value={draft.limitDraft} onChange={(e) => setDraft((d) => ({ ...d, limitDraft: e.target.value }))}>
                             {[12, 24, 48].map(n => <MenuItem key={n} value={String(n)}>{n}/trang</MenuItem>)}
                         </TextField>

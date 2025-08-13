@@ -3,6 +3,7 @@ import { authMiddleware } from '../middlewares/auth';
 import Review from '../models/Review';
 import Product from '../models/Product';
 import Order from '../models/Order';
+import { Types } from 'mongoose';
 
 const router = Router();
 
@@ -51,6 +52,18 @@ router.get('/me/:productId', authMiddleware, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET my reviews (list)
+router.get('/me', authMiddleware, async (req, res, next) => {
+  try {
+    const userId = (req as any).user._id;
+    const list = await Review.find({ userId })
+      .populate('productId', 'name image price ratingAvg ratingCount')
+      .sort({ updatedAt: -1 })
+      .limit(200);
+    res.json({ data: list });
+  } catch (err) { next(err); }
+});
+
 // DELETE my review
 router.delete('/:productId', authMiddleware, async (req, res, next) => {
   try {
@@ -59,7 +72,7 @@ router.delete('/:productId', authMiddleware, async (req, res, next) => {
     await Review.findOneAndDelete({ productId, userId });
     // Recompute product rating
     const agg = await Review.aggregate([
-      { $match: { productId: new (require('mongoose').Types.ObjectId)(productId) } },
+      { $match: { productId: new Types.ObjectId(productId) } },
       { $group: { _id: '$productId', avg: { $avg: '$rating' }, count: { $sum: 1 } } }
     ]);
     if (agg.length > 0) {
