@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import Order from '../models/Order';
 import Product from '../models/Product';
+import Coupon from '../models/Coupon';
 import { authMiddleware, requireRole } from '../middlewares/auth';
 import PDFDocument from 'pdfkit';
 import { sendMail } from '../utils/mailer';
@@ -32,10 +33,26 @@ router.post('/', authMiddleware, async (req, res, next) => {
             normalizedItems.push({ product: p._id, qty, price: (p as any).price });
         }
 
-        const total = normalizedItems.reduce((sum, i) => sum + i.qty * i.price, 0);
+        let total = normalizedItems.reduce((sum, i) => sum + i.qty * i.price, 0);
+        const couponCode = (req.body as any).coupon || '';
+        let appliedCoupon: any = null;
+        if (couponCode) {
+            try {
+                const now = new Date();
+                const cp = await Coupon.findOne({ code: couponCode, active: true, $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }] });
+                if (cp) {
+                    const percent = Number(cp.discountPercent || 0);
+                    const amount = Number(cp.discountAmount || 0);
+                    const discount = Math.max(amount, Math.round(total * percent / 100));
+                    total = Math.max(0, total - discount);
+                    appliedCoupon = { code: cp.code, discount };
+                    await Coupon.updateOne({ _id: cp._id }, { $inc: { usedCount: 1 } });
+                }
+            } catch {}
+        }
 
         const shippingAddress = (req.body as any).shippingAddress || {};
-        const created = await Order.create({ user: (req as any).user._id, items: normalizedItems, total, status: 'created', shippingAddress });
+        const created = await Order.create({ user: (req as any).user._id, items: normalizedItems, total, status: 'created', shippingAddress, coupon: appliedCoupon });
 
         // Decrement stock after order created
         const bulkOps = normalizedItems.map(i => ({ updateOne: { filter: { _id: i.product }, update: { $inc: { stock: -i.qty } } } }));

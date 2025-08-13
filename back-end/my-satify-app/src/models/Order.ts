@@ -20,6 +20,10 @@ const orderSchema = new Schema({
     shippedAt: { type: Date },
     deliveredAt: { type: Date },
     estimateDeliveryDate: { type: Date }
+    , coupon: {
+        code: String,
+        discount: Number
+    }
 }, { timestamps: true });
 
 export default model('Order', orderSchema);

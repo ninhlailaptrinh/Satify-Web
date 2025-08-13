@@ -11,11 +11,12 @@ export default function Cart() {
   const [phone, setPhone] = React.useState('');
   const [address, setAddress] = React.useState('');
   const [note, setNote] = React.useState('');
+  const [coupon, setCoupon] = React.useState('');
 
   const checkout = async () => {
     if (items.length === 0) return;
     try {
-      const payload = { items: items.map(i => ({ product: i.productId, qty: i.qty })), shippingAddress: { name, phone, address, note } };
+      const payload = { items: items.map(i => ({ product: i.productId, qty: i.qty })), shippingAddress: { name, phone, address, note }, coupon: coupon || undefined };
       await api.post('/orders', payload);
       showToast('Đặt hàng thành công', 'success');
       clear();
@@ -54,6 +55,7 @@ export default function Cart() {
             <TextField label="Số điện thoại" value={phone} onChange={(e) => setPhone(e.target.value)} fullWidth />
             <TextField label="Địa chỉ" value={address} onChange={(e) => setAddress(e.target.value)} fullWidth />
             <TextField label="Ghi chú" value={note} onChange={(e) => setNote(e.target.value)} fullWidth />
+            <TextField label="Mã giảm giá" value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())} fullWidth />
           </Stack>
         </Paper>
         <Box display="flex" justifyContent="space-between" alignItems="center">
