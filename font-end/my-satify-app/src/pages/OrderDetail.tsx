@@ -74,11 +74,18 @@ export default function OrderDetail() {
             </Grid>
           ))}
         </Grid>
-        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} sx={{ mt: 2 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} sx={{ mt: 2 }}>
           <Typography fontWeight={700}>Tổng: {formatCurrency(order.total)}</Typography>
           <Stack direction="row" spacing={1}>
             {order.status === 'created' && <Button variant="contained">Thanh toán</Button>}
             {(order.status === 'paid' || order.status === 'shipped') && <Button variant="outlined">Theo dõi vận chuyển</Button>}
+              <Button variant="outlined" onClick={async () => {
+                const url = `${import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}/orders/${order._id}/invoice`;
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('satify_token') || ''}` }, credentials: 'include' });
+                if (!res.ok) return alert('Tải hóa đơn thất bại');
+                const blob = await res.blob();
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `invoice_${order._id}.pdf`; document.body.appendChild(a); a.click(); a.remove();
+              }}>Tải hóa đơn (PDF)</Button>
           </Stack>
         </Stack>
       </Paper>

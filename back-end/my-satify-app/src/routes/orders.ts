@@ -2,6 +2,7 @@ import { Router } from 'express';
 import Order from '../models/Order';
 import Product from '../models/Product';
 import { authMiddleware, requireRole } from '../middlewares/auth';
+import PDFDocument from 'pdfkit';
 
 const router = Router();
 
@@ -203,6 +204,56 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
         const isOwner = String(order.user?._id || order.user) === String((req as any).user._id);
         if (!isAdmin && !isOwner) return res.status(403).json({ message: 'Forbidden' });
         res.json(order);
+    } catch (err) { next(err); }
+});
+
+// GET /api/orders/:id/invoice - generate PDF invoice (owner or admin)
+router.get('/:id/invoice', authMiddleware, async (req, res, next) => {
+    try {
+        const order = await Order.findById(req.params.id)
+            .populate('items.product', 'name image price')
+            .populate('user', 'name email');
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+        const isAdmin = (req as any).user?.role === 'admin';
+        const isOwner = String(order.user?._id || order.user) === String((req as any).user._id);
+        if (!isAdmin && !isOwner) return res.status(403).json({ message: 'Forbidden' });
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename=invoice_${order._id}.pdf`);
+
+        const doc = new (PDFDocument as any)({ size: 'A4', margin: 50 });
+        doc.pipe(res);
+
+        doc.fontSize(18).text('Satify Pet Shop - Hóa đơn', { align: 'center' });
+        doc.moveDown(0.5);
+        doc.fontSize(12).text(`Mã đơn: ${order._id}`);
+        doc.text(`Ngày: ${new Date(order.createdAt as any).toLocaleString()}`);
+        if ((order as any).user) doc.text(`Khách: ${(order as any).user.name} <${(order as any).user.email}>`);
+        if ((order as any).shippingAddress) {
+            const s = (order as any).shippingAddress;
+            doc.text(`Người nhận: ${s.name} - ${s.phone}`);
+            doc.text(`Địa chỉ: ${s.address}`);
+            if (s.note) doc.text(`Ghi chú: ${s.note}`);
+        }
+
+        doc.moveDown();
+        doc.fontSize(14).text('Chi tiết sản phẩm');
+        doc.moveDown(0.5);
+        (order.items as any[]).forEach((it: any, idx: number) => {
+            const line = `${idx + 1}. ${it.product?.name || 'Sản phẩm'}  x${it.qty}  -  ${it.price?.toLocaleString?.() || it.price}₫`;
+            doc.fontSize(12).text(line);
+        });
+
+        doc.moveDown();
+        doc.fontSize(14).text(`Tổng: ${(order.total as any).toLocaleString()}₫`, { align: 'right' });
+        if ((order as any).trackingNumber) {
+            doc.moveDown();
+            doc.fontSize(12).text(`ĐVVC: ${(order as any).carrier || ''}`);
+            doc.text(`Mã vận đơn: ${(order as any).trackingNumber}`);
+            if ((order as any).estimateDeliveryDate) doc.text(`Dự kiến giao: ${new Date((order as any).estimateDeliveryDate).toLocaleDateString()}`);
+        }
+
+        doc.end();
     } catch (err) { next(err); }
 });
 
