@@ -4,6 +4,7 @@ import Product from '../models/Product';
 import { authMiddleware, requireRole } from '../middlewares/auth';
 import PDFDocument from 'pdfkit';
 import { sendMail } from '../utils/mailer';
+import { generateInvoicePdf } from '../utils/invoice';
 
 const router = Router();
 
@@ -39,14 +40,18 @@ router.post('/', authMiddleware, async (req, res, next) => {
         // Decrement stock after order created
         const bulkOps = normalizedItems.map(i => ({ updateOne: { filter: { _id: i.product }, update: { $inc: { stock: -i.qty } } } }));
         if (bulkOps.length) await Product.bulkWrite(bulkOps);
-        // Try send confirmation email with simple summary
+        // Try send confirmation email with simple summary and PDF invoice
         try {
             const me = await (await import('../models/User')).default.findById((req as any).user._id).select('email name');
             if (me?.email) {
+                // Populate order for invoice
+                const populated = await Order.findById(created._id).populate('items.product', 'name price').populate('user', 'name email');
+                const pdf = await generateInvoicePdf(populated as any);
                 await sendMail({
                     to: me.email,
                     subject: `Xác nhận đơn hàng #${created._id}`,
                     text: `Cảm ơn ${me.name || ''}! Tổng tiền: ${total.toLocaleString()}₫`,
+                    attachments: [ { filename: `invoice_${created._id}.pdf`, content: pdf } ]
                 });
             }
         } catch {}
