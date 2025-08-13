@@ -4,6 +4,7 @@ import { useTheme } from '@mui/material/styles';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SortIcon from '@mui/icons-material/Sort';
 import { useEffect, useMemo, useState } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import api from "../api/axiosClient";
 import { useSearchParams } from "react-router-dom";

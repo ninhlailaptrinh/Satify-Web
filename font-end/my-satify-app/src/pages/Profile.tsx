@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Box, Button, Container, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Container, Paper, Stack, TextField, Typography, Grid } from '@mui/material';
+import ProductCard from '../components/ProductCard';
 import api from '../api/axiosClient';
 import { useToast } from '../context/ToastContext';
 
 export default function Profile() {
+  const [recent, setRecent] = useState<any[]>([]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,6 +19,18 @@ export default function Profile() {
         const res = await api.get('/users/me');
         setName(res.data.name);
         setEmail(res.data.email);
+      } catch {}
+      try {
+        const raw = localStorage.getItem('satify_recent_products');
+        const ids: string[] = raw ? JSON.parse(raw) : [];
+        if (ids.length) {
+          const results = await Promise.all(
+            ids.map(async (pid) => {
+              try { const r = await api.get(`/products/${pid}`); return r.data; } catch { return null; }
+            })
+          );
+          setRecent(results.filter(Boolean));
+        }
       } catch {}
     };
     load();
@@ -50,6 +64,19 @@ export default function Profile() {
           </Box>
         </Stack>
       </Paper>
+
+        {recent.length > 0 && (
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h5" gutterBottom>Đã xem gần đây</Typography>
+            <Grid container spacing={2}>
+              {recent.map((p: any) => (
+                <Grid item xs={12} sm={6} md={3} key={p._id}>
+                  <ProductCard id={p._id} name={p.name} price={p.price} image={p.image} />
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        )}
     </Container>
   );
 }

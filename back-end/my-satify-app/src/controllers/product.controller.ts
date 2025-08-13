@@ -4,6 +4,7 @@ import Product from '../models/Product';
 export const listProducts = async (req: Request, res: Response) => {
     const q = (req.query.q as string) || '';
     const category = (req.query.category as string) || '';
+    const ids = (req.query.ids as string) || '';
     const minPrice = req.query.minPrice ? Number(req.query.minPrice) : undefined;
     const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : undefined;
     const sort = (req.query.sort as string) || 'newest';
@@ -13,6 +14,10 @@ export const listProducts = async (req: Request, res: Response) => {
     const filter: any = {};
     if (q) filter.name = new RegExp(q, 'i');
     if (category) filter.category = category;
+    if (ids) {
+        const idList = ids.split(',').map(s => s.trim()).filter(Boolean);
+        if (idList.length > 0) filter._id = { $in: idList };
+    }
     if (minPrice !== undefined || maxPrice !== undefined) {
         filter.price = {};
         if (minPrice !== undefined) filter.price.$gte = minPrice;
