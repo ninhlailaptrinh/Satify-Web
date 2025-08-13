@@ -1,4 +1,5 @@
-import { Box, Typography, Grid, TextField, MenuItem, Stack, Paper, Button, Pagination, Skeleton } from "@mui/material";
+import { Box, Typography, Grid, TextField, MenuItem, Stack, Paper, Button, Pagination, Skeleton, Drawer, Divider } from "@mui/material";
+import FilterListIcon from '@mui/icons-material/FilterList';
 import { useEffect, useMemo, useState } from "react";
 import ProductCard from "../components/ProductCard";
 import api from "../api/axiosClient";
@@ -45,11 +46,33 @@ export default function ProductList() {
         setParams(next, { replace: true });
     };
 
+    const [filterOpen, setFilterOpen] = useState(false);
+    const [draft, setDraft] = useState({ qDraft: q, sortDraft: sort, minDraft: minPrice, maxDraft: maxPrice, limitDraft: limit });
+
+    const openFilter = () => {
+        setDraft({ qDraft: q, sortDraft: sort, minDraft: minPrice, maxDraft: maxPrice, limitDraft: limit });
+        setFilterOpen(true);
+    };
+    const applyFilter = () => {
+        const next = new URLSearchParams(params);
+        const { qDraft, sortDraft, minDraft, maxDraft, limitDraft } = draft;
+        const setOrDelete = (k: string, v?: string) => { if (v && v.length > 0) next.set(k, v); else next.delete(k); };
+        setOrDelete('q', qDraft);
+        setOrDelete('sort', sortDraft);
+        setOrDelete('minPrice', minDraft);
+        setOrDelete('maxPrice', maxDraft);
+        setOrDelete('limit', limitDraft);
+        next.delete('page');
+        setParams(next, { replace: true });
+        setFilterOpen(false);
+    };
+
     return (
-        <Box sx={{ p: 4 }}>
+        <Box sx={{ p: { xs: 2, md: 4 } }}>
             <Typography variant="h4" mb={2}>Danh sách sản phẩm</Typography>
 
-            <Paper sx={{ p: 2, mb: 3 }}>
+            {/* Desktop/tablet filters */}
+            <Paper sx={{ p: 2, mb: 3, display: { xs: 'none', md: 'block' } }}>
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
                     <TextField
                         label="Tìm kiếm"
@@ -71,6 +94,11 @@ export default function ProductList() {
                     <Button onClick={() => setParams(new URLSearchParams(), { replace: true })}>Xoá lọc</Button>
                 </Stack>
             </Paper>
+
+            {/* Mobile filter trigger */}
+            <Box sx={{ display: { xs: 'flex', md: 'none' }, mb: 2 }}>
+                <Button variant="outlined" startIcon={<FilterListIcon />} onClick={openFilter}>Bộ lọc</Button>
+            </Box>
 
             <Grid container spacing={2}>
                 {loading ? (
@@ -96,6 +124,39 @@ export default function ProductList() {
                     color="primary"
                 />
             </Box>
+
+            {/* Mobile bottom filter drawer */}
+            <Drawer anchor="bottom" open={filterOpen} onClose={() => setFilterOpen(false)}>
+                <Box sx={{ p: 2 }}>
+                    <Typography variant="h6" sx={{ mb: 1 }}>Bộ lọc</Typography>
+                    <Divider sx={{ mb: 2 }} />
+                    <Stack spacing={2}>
+                        <TextField
+                            label="Tìm kiếm"
+                            variant="outlined"
+                            value={draft.qDraft}
+                            onChange={(e) => setDraft((d) => ({ ...d, qDraft: e.target.value }))}
+                            fullWidth
+                        />
+                        <TextField select label="Sắp xếp" value={draft.sortDraft} onChange={(e) => setDraft((d) => ({ ...d, sortDraft: e.target.value }))}>
+                            <MenuItem value="newest">Mới nhất</MenuItem>
+                            <MenuItem value="price_asc">Giá tăng dần</MenuItem>
+                            <MenuItem value="price_desc">Giá giảm dần</MenuItem>
+                        </TextField>
+                        <Stack direction="row" spacing={2}>
+                            <TextField label="Giá từ" type="number" value={draft.minDraft} onChange={(e) => setDraft((d) => ({ ...d, minDraft: e.target.value }))} fullWidth />
+                            <TextField label="đến" type="number" value={draft.maxDraft} onChange={(e) => setDraft((d) => ({ ...d, maxDraft: e.target.value }))} fullWidth />
+                        </Stack>
+                        <TextField select label="Hiển thị" value={draft.limitDraft} onChange={(e) => setDraft((d) => ({ ...d, limitDraft: e.target.value }))}>
+                            {[12, 24, 48].map(n => <MenuItem key={n} value={String(n)}>{n}/trang</MenuItem>)}
+                        </TextField>
+                        <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
+                            <Button fullWidth onClick={() => { setDraft({ qDraft: '', sortDraft: 'newest', minDraft: '', maxDraft: '', limitDraft: '12' }); }}>Xoá lọc</Button>
+                            <Button variant="contained" fullWidth onClick={applyFilter}>Áp dụng</Button>
+                        </Stack>
+                    </Stack>
+                </Box>
+            </Drawer>
         </Box>
     );
 }

@@ -21,16 +21,16 @@ export default function ProductCard({ id, name, price, image }: ProductCardProps
 
     return (
         <Card sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', ':hover': { boxShadow: '0 6px 20px rgba(0,0,0,0.12)' } }}>
-            <Box sx={{ position: 'relative', width: '100%', pt: '66.66%', overflow: 'hidden' }}>
+            <Box sx={{ position: 'relative', width: '100%', pt: { xs: '100%', sm: '75%', md: '66.66%' }, overflow: 'hidden' }}>
                 <img src={image} alt={name} loading="lazy" decoding="async" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
             </Box>
             <CardContent sx={{ flex: '0 0 auto' }}>
-                <Typography variant="h6" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 56 }}>{name}</Typography>
-                <Typography color="text.secondary" sx={{ mt: 0.5 }}>{formatCurrency(price)}</Typography>
+                <Typography variant="subtitle1" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 48 }}>{name}</Typography>
+                <Typography color="text.secondary" sx={{ mt: 0.5, fontWeight: 600 }}>{formatCurrency(price)}</Typography>
             </CardContent>
-            <CardActions sx={{ mt: 'auto', pt: 0, pb: 2, px: 2 }}>
-                <Button size="small" onClick={() => id && navigate(`/products/${id}`)}>Xem chi tiết</Button>
-                <Button size="small" variant="contained" onClick={handleBuyNow}>Mua ngay</Button>
+            <CardActions sx={{ mt: 'auto', pt: 0, pb: 2, px: 2, gap: 1 }}>
+                <Button fullWidth size="small" onClick={() => id && navigate(`/products/${id}`)}>Chi tiết</Button>
+                <Button fullWidth size="small" variant="contained" onClick={handleBuyNow}>Mua</Button>
             </CardActions>
         </Card>
     );
