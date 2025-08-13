@@ -1,4 +1,5 @@
 import { Box, Typography, Grid, Button, Container, Paper, Stack, Skeleton } from "@mui/material";
+import { useMemo } from 'react';
 import ProductCard from "../components/ProductCard";
 import { useEffect, useState } from "react";
 import api from "../api/axiosClient";
@@ -8,6 +9,7 @@ import FlashSale from "../components/FlashSale";
 
 export default function Home() {
     const [featured, setFeatured] = useState<any[]>([]);
+    const [recent, setRecent] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -16,6 +18,18 @@ export default function Home() {
                 const res = await api.get('/products', { params: { limit: 8, sort: 'newest' } });
                 const data = Array.isArray(res.data) ? res.data : res.data.data;
                 setFeatured(data.slice(0, 8));
+                try {
+                    const raw = localStorage.getItem('satify_recent_products');
+                    const ids: string[] = raw ? JSON.parse(raw) : [];
+                    if (ids.length) {
+                        const results = await Promise.all(
+                            ids.map(async (pid) => {
+                                try { const r = await api.get(`/products/${pid}`); return r.data; } catch { return null; }
+                            })
+                        );
+                        setRecent(results.filter(Boolean));
+                    }
+                } catch {}
             } finally { setLoading(false); }
         };
         load();
@@ -99,6 +113,19 @@ export default function Home() {
                         ))
                     )}
                 </Grid>
+
+                {recent.length > 0 && (
+                    <>
+                        <Typography variant="h5" mt={4} mb={2}>Xem gần đây</Typography>
+                        <Grid container spacing={2}>
+                            {recent.map((p: any) => (
+                                <Grid item xs={12} sm={6} md={3} key={p._id}>
+                                    <ProductCard id={p._id} name={p.name} price={p.price} image={p.image} />
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </>
+                )}
             </Container>
         </Box>
     );

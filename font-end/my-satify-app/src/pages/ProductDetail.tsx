@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../api/axiosClient";
-import { Box, Typography, Grid, Button, Skeleton, Stack } from "@mui/material";
+import { Box, Typography, Grid, Button, Skeleton, Stack, Chip, Breadcrumbs, Link as MuiLink } from "@mui/material";
+import { Link as RouterLink } from 'react-router-dom';
 import { formatCurrency } from "../utils/format";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
@@ -26,6 +27,12 @@ export default function ProductDetail() {
       try {
         const res = await api.get(`/products/${id}`);
         setProduct(res.data);
+        try {
+          const raw = localStorage.getItem('satify_recent_products');
+          const arr = raw ? (JSON.parse(raw) as string[]) : [];
+          const next = [res.data._id, ...arr.filter((x: string) => x !== res.data._id)].slice(0, 10);
+          localStorage.setItem('satify_recent_products', JSON.stringify(next));
+        } catch {}
       } finally {
         setLoading(false);
       }
@@ -59,6 +66,11 @@ export default function ProductDetail() {
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
+      <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+        <MuiLink component={RouterLink} underline="hover" color="inherit" to="/">Trang chủ</MuiLink>
+        <MuiLink component={RouterLink} underline="hover" color="inherit" to="/products">Sản phẩm</MuiLink>
+        <Typography color="text.primary">Chi tiết</Typography>
+      </Breadcrumbs>
       <Grid container spacing={4}>
         <Grid item xs={12} md={6}>
           <Box sx={{ position: 'relative', width: '100%', pt: '75%', borderRadius: 2, overflow: 'hidden', boxShadow: 1 }}>
@@ -73,6 +85,11 @@ export default function ProductDetail() {
             <Button size="large" variant="contained" onClick={addToCart}>Thêm vào giỏ</Button>
             <Button size="large" variant="outlined" onClick={buyNow}>Mua ngay</Button>
           </Stack>
+          {product && (product as any).category && (
+            <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+              <Chip label={(product as any).category} component={RouterLink as any} to={`/products?category=${encodeURIComponent((product as any).category)}`} clickable />
+            </Stack>
+          )}
         </Grid>
       </Grid>
     </Box>
