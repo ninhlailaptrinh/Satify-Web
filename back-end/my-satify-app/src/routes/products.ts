@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import Product from '../models/Product';
 import { authMiddleware, requireRole } from '../middlewares/auth';
-import { listProducts, createProduct, deleteProduct } from '../controllers/product.controller';
+import { listProducts, createProduct, deleteProduct, suggestProducts } from '../controllers/product.controller';
 
 const router = Router();
 
@@ -10,6 +10,11 @@ router.get('/', async (req, res, next) => {
     try {
         await listProducts(req, res);
     } catch (err) { next(err); }
+});
+
+// GET /api/products/suggest?q=...
+router.get('/suggest', async (req, res, next) => {
+    try { await suggestProducts(req, res); } catch (err) { next(err); }
 });
 
 // POST /api/products  (admin)

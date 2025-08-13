@@ -46,3 +46,15 @@ export const deleteProduct = async (req: Request, res: Response) => {
     await Product.findByIdAndDelete(req.params.id);
     res.json({ ok: true });
 };
+
+export const suggestProducts = async (req: Request, res: Response) => {
+    try {
+        const q = (req.query.q as string) || '';
+        if (!q || q.length < 2) return res.json({ data: [] });
+        const regex = new RegExp(q, 'i');
+        const names: string[] = await Product.distinct('name', { name: regex });
+        res.json({ data: names.slice(0, 10) });
+    } catch (err) {
+        res.json({ data: [] });
+    }
+};

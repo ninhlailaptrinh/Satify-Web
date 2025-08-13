@@ -48,6 +48,22 @@ export default function ProductList() {
         fetchProducts();
     }, [q, sort, category, minPrice, maxPrice, params]);
 
+    // Infinite scroll for mobile: increment limit when reaching anchor
+    useEffect(() => {
+        if (!isMobile) return;
+        const anchor = document.getElementById('infinite-anchor');
+        if (!anchor) return;
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                const current = Number(params.get('limit') || 12);
+                const next = Math.min(current + 12, total || current + 12);
+                if (next !== current) updateParam('limit', String(next));
+            }
+        }, { rootMargin: '200px' });
+        observer.observe(anchor);
+        return () => observer.disconnect();
+    }, [isMobile, params, total]);
+
     // Persist filters to localStorage
     useEffect(() => {
         try {
@@ -134,10 +150,20 @@ export default function ProductList() {
         return categories;
     }, [products]);
 
-    const productNameSuggestions = useMemo(() => {
-        const names = Array.from(new Set(products.map(p => p.name)));
-        return names.slice(0, 20);
-    }, [products]);
+    const [serverSuggestions, setServerSuggestions] = useState<string[]>([]);
+    useEffect(() => {
+        const controller = new AbortController();
+        const run = async () => {
+            try {
+                if (!searchInput || searchInput.length < 2) { setServerSuggestions([]); return; }
+                const res = await api.get('/products/suggest', { params: { q: searchInput }, signal: controller.signal });
+                const data = Array.isArray(res.data) ? res.data : res.data.data;
+                setServerSuggestions(data || []);
+            } catch {}
+        };
+        const t = setTimeout(run, 200);
+        return () => { clearTimeout(t); controller.abort(); };
+    }, [searchInput]);
 
     const onSelectCategory = (c: string) => {
         const current = params.get('category') || '';
@@ -218,7 +244,7 @@ export default function ProductList() {
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
                     <Autocomplete
                         freeSolo
-                        options={productNameSuggestions}
+                        options={serverSuggestions}
                         inputValue={searchInput}
                         onInputChange={(_, v) => setSearchInput(v)}
                         onChange={(_, v) => updateParam('q', String(v || ''))}
@@ -280,13 +306,9 @@ export default function ProductList() {
                 />
             </Box>
 
-            {/* Mobile Load More */}
-            {isMobile && total > Number(limit) && (
-                <Box mt={2} display="flex" justifyContent="center">
-                    <Button variant="outlined" onClick={() => { updateParam('limit', String(Math.min(Number(limit) + 12, total))); updateParam('page', '1'); }}>
-                        Tải thêm
-                    </Button>
-                </Box>
+            {/* Infinite scroll on mobile */}
+            {isMobile && (
+                <Box id="infinite-anchor" />
             )}
 
             {/* Mobile bottom filter drawer */}
