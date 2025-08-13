@@ -177,10 +177,16 @@ router.get('/export', authMiddleware, requireRole('admin'), async (req, res, nex
 // PUT /api/orders/:id/status - update status (admin)
 router.put('/:id/status', authMiddleware, requireRole('admin'), async (req, res, next) => {
     try {
-        const { status } = req.body as { status: string };
+        const { status, trackingNumber, carrier, estimateDeliveryDate } = req.body as { status: string; trackingNumber?: string; carrier?: string; estimateDeliveryDate?: string };
         const allowed = ['created', 'paid', 'shipped', 'completed', 'cancelled'];
         if (!allowed.includes(status)) return res.status(400).json({ message: 'Invalid status' });
-        const updated = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
+        const update: any = { status };
+        if (trackingNumber !== undefined) update.trackingNumber = trackingNumber;
+        if (carrier !== undefined) update.carrier = carrier;
+        if (estimateDeliveryDate) update.estimateDeliveryDate = new Date(estimateDeliveryDate);
+        if (status === 'shipped') update.shippedAt = new Date();
+        if (status === 'completed') update.deliveredAt = new Date();
+        const updated = await Order.findByIdAndUpdate(req.params.id, update, { new: true });
         if (!updated) return res.status(404).json({ message: 'Order not found' });
         res.json(updated);
     } catch (err) { next(err); }

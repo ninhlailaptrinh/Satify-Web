@@ -14,7 +14,12 @@ const orderSchema = new Schema({
         phone: String,
         address: String,
         note: String
-    }
+    },
+    trackingNumber: { type: String, default: '' },
+    carrier: { type: String, default: '' },
+    shippedAt: { type: Date },
+    deliveredAt: { type: Date },
+    estimateDeliveryDate: { type: Date }
 }, { timestamps: true });
 
 export default model('Order', orderSchema);
