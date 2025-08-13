@@ -50,4 +50,33 @@ router.get('/', authMiddleware, requireRole('admin'), async (_req, res, next) =>
   }
 });
 
+// GET /api/stats/revenue_daily?days=14 - revenue per day for last N days
+router.get('/revenue_daily', authMiddleware, requireRole('admin'), async (req, res, next) => {
+  try {
+    const days = Math.max(1, Math.min(90, Number(req.query.days || 14)));
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (days - 1));
+    const paidLikeStatuses = ['paid', 'shipped', 'completed'];
+
+    const rows = await Order.aggregate([
+      { $match: { status: { $in: paidLikeStatuses }, createdAt: { $gte: start } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, total: { $sum: '$total' } } },
+      { $sort: { _id: 1 } }
+    ]);
+
+    const map: Record<string, number> = {};
+    for (const r of rows) map[r._id] = r.total;
+    const out: Array<{ date: string; total: number }> = [];
+    for (let i = 0; i < days; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const key = d.toISOString().slice(0, 10);
+      out.push({ date: key, total: map[key] || 0 });
+    }
+
+    res.json({ data: out });
+  } catch (err) { next(err); }
+});
+
 export default router;

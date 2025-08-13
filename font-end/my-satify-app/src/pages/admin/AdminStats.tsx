@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
-import { Container, Grid, Paper, Typography, Stack, Divider, Chip, LinearProgress, Box, Avatar } from "@mui/material";
-import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
-import Inventory2Icon from '@mui/icons-material/Inventory2';
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import PaidIcon from '@mui/icons-material/Paid';
+import { Container, Grid, Paper, Typography, Stack, Divider, Chip, LinearProgress, Box } from "@mui/material";
 import api from "../../api/axiosClient";
 import { formatCurrency } from "../../utils/format";
+import { useMemo } from "react";
+interface RevenueDaily { date: string; total: number }
 
 interface StatsResponse {
   users: { total: number };
@@ -18,13 +16,20 @@ export default function AdminStats() {
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
+  const [daily, setDaily] = useState<RevenueDaily[]>([]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const res = await api.get<StatsResponse>("/stats");
-        if (mounted) setStats(res.data);
+        const [res, dailyRes] = await Promise.all([
+          api.get<StatsResponse>("/stats"),
+          api.get<{ data: RevenueDaily[] }>("/stats/revenue_daily", { params: { days: 14 } })
+        ]);
+        if (mounted) {
+          setStats(res.data);
+          setDaily(dailyRes.data.data || []);
+        }
       } catch (e: any) {
         setError(e?.response?.data?.message || "Không thể tải thống kê");
       } finally {
@@ -40,71 +45,36 @@ export default function AdminStats() {
 
   const statusEntries = Object.entries(stats.orders.byStatus || {});
 
+  const kpis = useMemo(() => ([
+    { label: 'Người dùng', value: stats.users.total },
+    { label: 'Sản phẩm', value: stats.products.total },
+    { label: 'Đơn hàng', value: stats.orders.total },
+    { label: 'Doanh thu 30 ngày', value: formatCurrency(stats.revenue.last30d) },
+  ]), [stats]);
+
   return (
     <Container disableGutters>
       <Grid container spacing={2}>
-        <Grid item xs={12} md={3}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, position: 'relative', overflow: 'hidden' }}>
-            <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(238,77,45,0.06), rgba(255,179,0,0.06))' }} />
-            <Stack direction="row" alignItems="center" spacing={2} sx={{ position: 'relative' }}>
-              <Avatar sx={{ bgcolor: 'primary.main', color: 'white' }}>
-                <PeopleAltIcon />
-              </Avatar>
-              <Box>
-                <Typography variant="overline" color="text.secondary">Người dùng</Typography>
-                <Typography variant="h4" fontWeight={800}>{stats.users.total}</Typography>
-              </Box>
-            </Stack>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, position: 'relative', overflow: 'hidden' }}>
-            <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(238,77,45,0.06), rgba(255,179,0,0.06))' }} />
-            <Stack direction="row" alignItems="center" spacing={2} sx={{ position: 'relative' }}>
-              <Avatar sx={{ bgcolor: 'secondary.main', color: 'white' }}>
-                <Inventory2Icon />
-              </Avatar>
-              <Box>
-                <Typography variant="overline" color="text.secondary">Sản phẩm</Typography>
-                <Typography variant="h4" fontWeight={800}>{stats.products.total}</Typography>
-              </Box>
-            </Stack>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, position: 'relative', overflow: 'hidden' }}>
-            <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(238,77,45,0.06), rgba(255,179,0,0.06))' }} />
-            <Stack direction="row" alignItems="center" spacing={2} sx={{ position: 'relative' }}>
-              <Avatar sx={{ bgcolor: 'primary.dark', color: 'white' }}>
-                <ReceiptLongIcon />
-              </Avatar>
-              <Box>
-                <Typography variant="overline" color="text.secondary">Đơn hàng</Typography>
-                <Typography variant="h4" fontWeight={800}>{stats.orders.total}</Typography>
-              </Box>
-            </Stack>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, position: 'relative', overflow: 'hidden' }}>
-            <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(238,77,45,0.06), rgba(255,179,0,0.06))' }} />
-            <Stack direction="row" alignItems="center" spacing={2} sx={{ position: 'relative' }}>
-              <Avatar sx={{ bgcolor: 'success.main', color: 'white' }}>
-                <PaidIcon />
-              </Avatar>
-              <Box>
-                <Typography variant="overline" color="text.secondary">Doanh thu 30 ngày</Typography>
-                <Typography variant="h6" fontWeight={800}>{formatCurrency(stats.revenue.last30d)}</Typography>
-              </Box>
-            </Stack>
-          </Paper>
-        </Grid>
+        {kpis.map((k, i) => (
+          <Grid key={i} item xs={12} md={3}>
+            <Paper sx={{ p: 2.5, borderRadius: 3 }}>
+              <Typography variant="overline" color="text.secondary">{k.label}</Typography>
+              <Typography variant="h4" fontWeight={800}>{k.value}</Typography>
+            </Paper>
+          </Grid>
+        ))}
 
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, background: 'linear-gradient(135deg, #fff, #fff)', position: 'relative' }}>
-            <Typography variant="subtitle1" gutterBottom fontWeight={700}>Tổng doanh thu</Typography>
-            <Typography variant="h4" fontWeight={800}>{formatCurrency(stats.revenue.total)}</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Tính đến hiện tại</Typography>
+          <Paper sx={{ p: 2.5, borderRadius: 3 }}>
+            <Typography variant="subtitle1" gutterBottom fontWeight={700}>Doanh thu theo ngày (14 ngày)</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 160 }}>
+              {daily.map((d, idx) => (
+                <Box key={idx} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Box sx={{ width: '100%', bgcolor: 'primary.main', borderRadius: 1, height: `${Math.max(6, Math.min(100, d.total))}px`, opacity: 0.8 }} />
+                  <Typography variant="caption" sx={{ mt: 0.5 }}>{d.date.slice(5)}</Typography>
+                </Box>
+              ))}
+            </Box>
           </Paper>
         </Grid>
 
@@ -115,7 +85,7 @@ export default function AdminStats() {
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               {statusEntries.length === 0 && <Typography color="text.secondary">Không có dữ liệu</Typography>}
               {statusEntries.map(([status, count]) => (
-                <Chip key={status} label={`${status}: ${count}`} color={status === 'completed' ? 'success' : status === 'paid' ? 'primary' : status === 'shipped' ? 'secondary' : status === 'cancelled' ? 'error' : 'default'} variant="outlined" />
+                <Chip key={status} label={`${status}: ${count}`} variant="outlined" />
               ))}
             </Stack>
           </Paper>
