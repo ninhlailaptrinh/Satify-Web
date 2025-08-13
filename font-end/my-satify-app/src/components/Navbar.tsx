@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axiosClient";
 import { useCart } from "../context/CartContext";
 import SearchIcon from '@mui/icons-material/Search';
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Navbar() {
     const navigate = useNavigate();
@@ -15,6 +15,19 @@ export default function Navbar() {
     const { totalQuantity } = useCart();
     const [mobileOpen, setMobileOpen] = useState(false as boolean);
     const [searchValue, setSearchValue] = useState("");
+    const appBarRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        const updateHeightVar = () => {
+            try {
+                const h = appBarRef.current?.getBoundingClientRect().height || 72;
+                document.documentElement.style.setProperty('--appbar-height', `${Math.round(h)}px`);
+            } catch {}
+        };
+        updateHeightVar();
+        window.addEventListener('resize', updateHeightVar);
+        return () => window.removeEventListener('resize', updateHeightVar);
+    }, []);
 
     const handleLogout = async () => {
         try {
@@ -35,7 +48,7 @@ export default function Navbar() {
     const categories = ['Chó', 'Mèo', 'Phụ kiện', 'Thức ăn', 'Đồ chơi'];
 
     return (
-        <AppBar position="sticky" color="primary" sx={{ boxShadow: 'none' }}>
+        <AppBar position="sticky" color="primary" sx={{ boxShadow: 'none' }} ref={appBarRef}>
             {/* Top promo bar moved to TopBar component */}
             <Container>
                 <Toolbar sx={{ gap: 2, px: 0, minHeight: 72 }}>

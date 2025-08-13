@@ -186,7 +186,7 @@ export default function ProductList() {
             </Breadcrumbs>
 
             {/* Quick filter chips */}
-            <Box sx={{ position: { xs: 'sticky', md: 'static' }, top: { xs: 72, md: 'auto' }, zIndex: (t) => t.zIndex.appBar - 1, bgcolor: 'background.default', py: 1, mb: 2, borderBottom: { xs: 1, md: 0 }, borderColor: 'divider', boxShadow: { xs: 1, md: 'none' } }}>
+            <Box sx={{ position: { xs: 'sticky', md: 'static' }, top: { xs: 'calc(var(--appbar-height, 72px))', md: 'auto' }, zIndex: (t) => t.zIndex.appBar - 1, bgcolor: 'background.default', py: 1, mb: 2, borderBottom: { xs: 1, md: 0 }, borderColor: 'divider', boxShadow: { xs: 1, md: 'none' } }}>
                 <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                     {dynamicCategories.map((c) => (
                         <Chip key={c} label={c} clickable color={category === c ? 'primary' : 'default'} onClick={() => onSelectCategory(c)} />
