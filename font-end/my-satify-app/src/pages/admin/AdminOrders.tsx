@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../../api/axiosClient';
-import { Box, Typography, Paper, Table, TableHead, TableRow, TableCell, TableBody, Chip, MenuItem, Select, TextField, Stack, Pagination } from '@mui/material';
+import { Box, Typography, Paper, Table, TableHead, TableRow, TableCell, TableBody, Chip, MenuItem, Select, TextField, Stack, Pagination, Button } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
 
 interface OrderItem { product: string; qty: number; price: number; }
@@ -23,6 +23,22 @@ export default function AdminOrders() {
 
   useEffect(() => { load(); }, [q, status, page]);
 
+  const exportCsv = async () => {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (status) params.set('status', status);
+    const url = `${import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}/orders/export?${params.toString()}`;
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('satify_token') || ''}` }, credentials: 'include' });
+    if (!res.ok) return alert('Xuất CSV thất bại');
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `orders_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   const changeStatus = async (id: string, status: string) => {
     await api.put(`/orders/${id}/status`, { status });
     await load();
@@ -40,6 +56,7 @@ export default function AdminOrders() {
             <MenuItem value="">Tất cả</MenuItem>
             {['created','paid','shipped','completed','cancelled'].map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
           </TextField>
+          <Button variant="outlined" onClick={exportCsv}>Xuất CSV</Button>
         </Stack>
       </Stack>
       <Paper>

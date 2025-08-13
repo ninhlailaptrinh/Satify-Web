@@ -70,6 +70,63 @@ router.get('/', authMiddleware, requireRole('admin'), async (req, res, next) => 
     } catch (err) { next(err); }
 });
 
+// GET /api/orders/export - export CSV (admin) with same filters as list
+router.get('/export', authMiddleware, requireRole('admin'), async (req, res, next) => {
+    try {
+        const q = (req.query.q as string) || '';
+        const status = (req.query.status as string) || '';
+
+        const pipeline: any[] = [];
+        if (status) pipeline.push({ $match: { status } });
+        pipeline.push(
+            { $sort: { createdAt: -1 } },
+            { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
+            { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+        );
+        if (q) {
+            pipeline.push({
+                $match: {
+                    $or: [
+                        { 'user.name': { $regex: q, $options: 'i' } },
+                        { 'user.email': { $regex: q, $options: 'i' } },
+                        { $expr: { $regexMatch: { input: { $toString: '$_id' }, regex: q, options: 'i' } } }
+                    ]
+                }
+            });
+        }
+        // Safety cap to avoid exporting huge data sets
+        pipeline.push({ $limit: 5000 });
+
+        const rows: any[] = await Order.aggregate(pipeline);
+
+        const header = ['id', 'userName', 'userEmail', 'status', 'total', 'itemCount', 'createdAt'];
+        const escape = (val: any) => {
+            if (val === null || val === undefined) return '';
+            const s = String(val).replace(/"/g, '""');
+            return `"${s}` + `"`;
+        };
+        const csvLines = [header.join(',')];
+        for (const r of rows) {
+            const line = [
+                r._id,
+                r.user?.name || '',
+                r.user?.email || '',
+                r.status || '',
+                r.total ?? 0,
+                Array.isArray(r.items) ? r.items.length : 0,
+                new Date(r.createdAt).toISOString(),
+            ].map(escape).join(',');
+            csvLines.push(line);
+        }
+
+        const csv = '\uFEFF' + csvLines.join('\n'); // BOM for Excel
+        const filename = `orders_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+        res.send(csv);
+    } catch (err) { next(err); }
+});
+
 // PUT /api/orders/:id/status - update status (admin)
 router.put('/:id/status', authMiddleware, requireRole('admin'), async (req, res, next) => {
     try {
