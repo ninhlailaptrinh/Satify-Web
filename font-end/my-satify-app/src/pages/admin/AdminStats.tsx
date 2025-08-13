@@ -112,18 +112,39 @@ export default function AdminStats() {
                 <TextField size="small" value={''} onChange={() => {}} placeholder=" " sx={{ display: 'none' }} />
               </Stack>
             </Stack>
-            <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 200 }}>
+            <Box sx={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 0.75, height: 220, overflowX: 'auto', pb: 1 }}>
               {(() => {
+                const chartHeight = 180; // px for column area
+                const barWidth = 10; // px thickness
                 const maxTotal = Math.max(1, ...daily.map((d) => d.total));
-                return daily.map((d, idx) => {
-                  const h = Math.max(4, Math.round((d.total / maxTotal) * 176));
-                  return (
-                    <Box key={idx} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <Box sx={{ width: '100%', bgcolor: 'primary.main', borderRadius: 1, height: `${h}px`, opacity: 0.9 }} />
-                      <Typography variant="caption" sx={{ mt: 0.5 }}>{d.date.slice(5)}</Typography>
+                const avg = daily.length ? daily.reduce((s, d) => s + d.total, 0) / daily.length : 0;
+                const avgH = Math.max(0, Math.round((avg / maxTotal) * chartHeight));
+
+                return (
+                  <>
+                    {/* Average line */}
+                    <Box sx={{ position: 'absolute', left: 0, right: 0, bottom: `${avgH}px`, height: 0 }}>
+                      <Box sx={{ borderTop: '2px dashed', borderColor: 'secondary.main' }} />
+                      <Typography variant="caption" sx={{ position: 'absolute', right: 0, transform: 'translateY(-100%)', bgcolor: 'background.paper', px: 0.5, borderRadius: 0.5, color: 'text.secondary' }}>
+                        Trung bình: {formatCurrency(Math.round(avg))}
+                      </Typography>
                     </Box>
-                  );
-                });
+
+                    {/* Bars */}
+                    {daily.map((d, idx) => {
+                      const h = Math.max(4, Math.round((d.total / maxTotal) * chartHeight));
+                      return (
+                        <Box key={idx} sx={{ width: barWidth, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <Box sx={{ width: '100%', height: `${h}px`, borderRadius: 1,
+                            background: 'linear-gradient(180deg, #ffb300, #ee4d2d)',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
+                          }} />
+                          <Typography variant="caption" sx={{ mt: 0.5, whiteSpace: 'nowrap' }}>{d.date.slice(5)}</Typography>
+                        </Box>
+                      );
+                    })}
+                  </>
+                );
               })()}
             </Box>
           </Paper>
