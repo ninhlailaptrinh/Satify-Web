@@ -68,6 +68,7 @@ export const suggestProducts = async (req: Request, res: Response) => {
 export const bestSellers = async (req: Request, res: Response) => {
     try {
         const limit = Math.min(50, Math.max(1, Number(req.query.limit || 8)));
+        const category = (req.query.category as string) || '';
         const paidLikeStatuses = ['paid', 'shipped', 'completed'];
         const result = await Order.aggregate([
             { $match: { status: { $in: paidLikeStatuses } } },
@@ -83,6 +84,7 @@ export const bestSellers = async (req: Request, res: Response) => {
             { $limit: limit },
             { $lookup: { from: 'products', localField: '_id', foreignField: '_id', as: 'product' } },
             { $unwind: '$product' },
+            ...(category ? [{ $match: { 'product.category': category } }] : []),
             {
                 $replaceRoot: {
                     newRoot: {

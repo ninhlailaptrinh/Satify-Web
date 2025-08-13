@@ -18,6 +18,7 @@ export default function AdminStats() {
   const [error, setError] = useState<string>("");
   const [daily, setDaily] = useState<RevenueDaily[]>([]);
   const [best, setBest] = useState<BestSeller[]>([]);
+  const [bestCategory, setBestCategory] = useState<string>('');
   const [dailyDays, setDailyDays] = useState<number>(14);
 
   useEffect(() => {
@@ -40,6 +41,18 @@ export default function AdminStats() {
     })();
     return () => { mounted = false; };
   }, []);
+
+  // fetch best sellers when category changes
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const bestRes = await api.get<{ data: BestSeller[] }>("/products/best_sellers", { params: { limit: 8, category: bestCategory || undefined } });
+        if (mounted) setBest((bestRes.data as any).data || (bestRes.data as any) || []);
+      } catch {}
+    })();
+    return () => { mounted = false; };
+  }, [bestCategory]);
 
   // fetch revenue daily when range changes
   useEffect(() => {
@@ -121,7 +134,15 @@ export default function AdminStats() {
 
         <Grid item xs={12}>
           <Paper sx={{ p: 2.5, borderRadius: 3 }}>
-            <Typography variant="subtitle1" gutterBottom fontWeight={700}>Top bán chạy</Typography>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Typography variant="subtitle1" gutterBottom fontWeight={700}>Top bán chạy</Typography>
+              <TextField size="small" select value={bestCategory} onChange={(e) => setBestCategory(e.target.value)} sx={{ minWidth: 180 }}>
+                <MenuItem value="">Tất cả danh mục</MenuItem>
+                {['Chó','Mèo','Phụ kiện','Thức ăn','Đồ chơi','general'].map((c) => (
+                  <MenuItem key={c} value={c}>{c}</MenuItem>
+                ))}
+              </TextField>
+            </Stack>
             <Divider sx={{ my: 1 }} />
             <Stack spacing={1.25}>
               {best.length === 0 && <Typography color="text.secondary">Chưa có dữ liệu</Typography>}
