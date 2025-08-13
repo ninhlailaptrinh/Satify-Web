@@ -115,7 +115,15 @@ export default function ProductDetail() {
           </Box>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Typography variant="h4" sx={{ fontWeight: 700 }}>{product.name}</Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="h4" sx={{ fontWeight: 700 }}>{product.name}</Typography>
+            {typeof (product as any).ratingAvg === 'number' && (
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <Rating value={Number((product as any).ratingAvg)} precision={0.5} size="small" readOnly />
+                <Typography variant="caption" color="text.secondary">({(product as any).ratingCount || 0})</Typography>
+              </Stack>
+            )}
+          </Stack>
           <Typography variant="h5" color="primary" sx={{ my: 1.5 }}>{formatCurrency(product.price)}</Typography>
           <Typography sx={{ mb: 3, color: 'text.secondary' }}>{product.description || 'Không có mô tả'}</Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>

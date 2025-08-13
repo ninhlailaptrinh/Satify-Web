@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authMiddleware } from '../middlewares/auth';
 import Review from '../models/Review';
 import Product from '../models/Product';
+import Order from '../models/Order';
 
 const router = Router();
 
@@ -21,6 +22,9 @@ router.post('/:productId', authMiddleware, async (req, res, next) => {
     const userId = (req as any).user._id;
     const { rating, comment } = req.body as { rating: number; comment?: string };
     if (!rating || rating < 1 || rating > 5) return res.status(400).json({ message: 'Invalid rating' });
+    // Verify purchased
+    const hasPurchased = await Order.exists({ user: userId, 'items.product': productId, status: { $ne: 'cancelled' } });
+    if (!hasPurchased) return res.status(403).json({ message: 'Bạn cần mua sản phẩm này trước khi đánh giá' });
     const upsert = await Review.findOneAndUpdate(
       { productId, userId },
       { rating, comment: comment || '' },

@@ -63,7 +63,8 @@ export default function Favorites() {
               <Button variant="text" color="error" onClick={revokeShare}>Thu hồi link</Button>
             )}
             {shareUrl && (
-              <TextField size="small" value={shareUrl} InputProps={{ readOnly: true }} sx={{ width: { xs: '100%', sm: 360 } }} />
+              <TextField size="small" value={shareUrl} InputProps={{ readOnly: true }} sx={{ width: { xs: '100%', sm: 360 } }} onFocus={(e) => e.currentTarget.select()} />
+              <Button variant="outlined" onClick={async () => { try { await navigator.clipboard.writeText(shareUrl); } catch {} }}>Copy</Button>
             )}
           </Stack>
         </Stack>
