@@ -8,6 +8,7 @@ import FlashSale from "../components/FlashSale";
 
 export default function Home() {
     const [featured, setFeatured] = useState<any[]>([]);
+    const [best, setBest] = useState<any[]>([]);
     const [recent, setRecent] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -17,6 +18,11 @@ export default function Home() {
                 const res = await api.get('/products', { params: { limit: 8, sort: 'newest' } });
                 const data = Array.isArray(res.data) ? res.data : res.data.data;
                 setFeatured(data.slice(0, 8));
+                try {
+                    const bestRes = await api.get('/products/best_sellers', { params: { limit: 8 } });
+                    const bestData = Array.isArray(bestRes.data) ? bestRes.data : bestRes.data.data;
+                    setBest(bestData.slice(0, 8));
+                } catch {}
                 try {
                     const raw = localStorage.getItem('satify_recent_products');
                     const ids: string[] = raw ? JSON.parse(raw) : [];
@@ -108,6 +114,19 @@ export default function Home() {
                         ))
                     ) : (
                         featured.map((p, i) => (
+                            <Grid item xs={12} sm={6} md={3} key={i}><ProductCard id={p._id} name={p.name} price={p.price} image={p.image} /></Grid>
+                        ))
+                    )}
+                </Grid>
+
+                <Typography variant="h5" mt={4} mb={2}>Bán chạy</Typography>
+                <Grid container spacing={2}>
+                    {loading ? (
+                        Array.from({ length: 8 }).map((_, i) => (
+                            <Grid item xs={12} sm={6} md={3} key={i}><Skeleton variant="rectangular" width={'100%'} height={260} /></Grid>
+                        ))
+                    ) : (
+                        best.map((p, i) => (
                             <Grid item xs={12} sm={6} md={3} key={i}><ProductCard id={p._id} name={p.name} price={p.price} image={p.image} /></Grid>
                         ))
                     )}

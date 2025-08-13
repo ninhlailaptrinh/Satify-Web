@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Product from '../models/Product';
+import Order from '../models/Order';
 
 export const listProducts = async (req: Request, res: Response) => {
     const q = (req.query.q as string) || '';
@@ -61,5 +62,40 @@ export const suggestProducts = async (req: Request, res: Response) => {
         res.json({ data: names.slice(0, 10) });
     } catch (err) {
         res.json({ data: [] });
+    }
+};
+
+export const bestSellers = async (req: Request, res: Response) => {
+    try {
+        const limit = Math.min(50, Math.max(1, Number(req.query.limit || 8)));
+        const paidLikeStatuses = ['paid', 'shipped', 'completed'];
+        const result = await Order.aggregate([
+            { $match: { status: { $in: paidLikeStatuses } } },
+            { $unwind: '$items' },
+            {
+                $group: {
+                    _id: '$items.product',
+                    qty: { $sum: '$items.qty' },
+                    revenue: { $sum: { $multiply: ['$items.qty', '$items.price'] } }
+                }
+            },
+            { $sort: { qty: -1 } },
+            { $limit: limit },
+            { $lookup: { from: 'products', localField: '_id', foreignField: '_id', as: 'product' } },
+            { $unwind: '$product' },
+            {
+                $replaceRoot: {
+                    newRoot: {
+                        $mergeObjects: [
+                            '$product',
+                            { qtySold: '$qty', revenue: '$revenue' }
+                        ]
+                    }
+                }
+            }
+        ]);
+        res.json({ data: result });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to compute best sellers' });
     }
 };
