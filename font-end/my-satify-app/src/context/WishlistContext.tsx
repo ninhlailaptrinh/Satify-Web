@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import api from '../api/axiosClient';
 
 interface WishlistContextValue {
   ids: string[];
@@ -33,6 +34,31 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(ids)); } catch {}
+  }, [ids]);
+
+  // Sync from server if logged-in
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = localStorage.getItem('satify_token');
+        if (!token) return; // not logged in
+        const res = await api.get('/users/me/wishlist');
+        const serverIds: string[] = res.data?.ids || [];
+        if (serverIds.length > 0) setIds(serverIds);
+      } catch {}
+    })();
+  }, []);
+
+  // Persist to server on change (debounced via simple setTimeout)
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem('satify_token');
+        if (!token) return;
+        await api.put('/users/me/wishlist', { ids });
+      } catch {}
+    }, 300);
+    return () => clearTimeout(timer);
   }, [ids]);
 
   const add = useCallback((id?: string) => {

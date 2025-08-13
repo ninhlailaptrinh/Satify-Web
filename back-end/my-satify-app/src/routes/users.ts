@@ -30,6 +30,27 @@ router.put('/me', authMiddleware, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET wishlist
+router.get('/me/wishlist', authMiddleware, async (req, res, next) => {
+  try {
+    const user = await User.findById((req as any).user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ ids: user.wishlist || [] });
+  } catch (err) { next(err); }
+});
+
+// PUT wishlist (replace)
+router.put('/me/wishlist', authMiddleware, async (req, res, next) => {
+  try {
+    const { ids } = req.body as { ids: string[] };
+    const user = await User.findById((req as any).user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    user.wishlist = Array.isArray(ids) ? ids : [];
+    await user.save();
+    res.json({ ids: user.wishlist });
+  } catch (err) { next(err); }
+});
+
 // GET /api/users (admin) with pagination/search
 router.get('/', authMiddleware, requireRole('admin'), async (req, res, next) => {
   try {
