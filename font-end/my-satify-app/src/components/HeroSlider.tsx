@@ -72,10 +72,10 @@ export default function HeroSlider({ slides: slidesProp, intervalMs = 5000 }: He
           </Box>
         </Container>
       </Box>
-      <IconButton onClick={prev} sx={{ position: 'absolute', top: '50%', left: 12, transform: 'translateY(-50%)', color: 'white' }}>
+      <IconButton onClick={prev} sx={{ position: 'absolute', top: '50%', left: 12, transform: 'translateY(-50%)', color: 'white', display: { xs: 'none', sm: 'flex' } }}>
         <ChevronLeftIcon />
       </IconButton>
-      <IconButton onClick={next} sx={{ position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)', color: 'white' }}>
+      <IconButton onClick={next} sx={{ position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)', color: 'white', display: { xs: 'none', sm: 'flex' } }}>
         <ChevronRightIcon />
       </IconButton>
       <Stack direction="row" spacing={1} sx={{ position: 'absolute', bottom: 12, left: 0, right: 0 }} justifyContent="center">

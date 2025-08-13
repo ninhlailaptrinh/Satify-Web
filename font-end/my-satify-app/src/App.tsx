@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import TopBar from "./components/TopBar";
 import Footer from "./components/Footer";
+import MobileBottomNav from "./components/MobileBottomNav";
 import Home from "./pages/Home";
 import ProductList from "./pages/ProductList";
 import Login from "./pages/Login";
@@ -38,6 +39,7 @@ export default function App() {
                     }
                 />
             </Routes>
+            <MobileBottomNav />
             <Footer />
         </>
     );

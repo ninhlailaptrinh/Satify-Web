@@ -29,7 +29,8 @@ export default function Home() {
                     color: 'white',
                     py: { xs: 8, md: 12 },
                     background: 'linear-gradient(135deg, #ee4d2d 0%, #ff7e4d 50%, #ffb300 100%)',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    mt: '-2px'
                 }}
             >
                 <Box sx={{
@@ -76,7 +77,7 @@ export default function Home() {
             <Container sx={{ py: 4 }}>
                 <HeroSlider />
                 <Paper sx={{ p: 2, mb: 3 }}>
-                    <Stack direction="row" spacing={2}>
+                    <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
                         {['Chó', 'Mèo', 'Phụ kiện'].map((c, i) => (
                             <Button key={i} component={RouterLink} to={`/products?category=${encodeURIComponent(c)}`} variant="outlined">{c}</Button>
                         ))}
