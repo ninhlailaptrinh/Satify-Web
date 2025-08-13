@@ -68,16 +68,20 @@ export default function AdminStats() {
   return (
     <Container disableGutters>
       <Grid container spacing={2}>
-        {kpis.map((k, i) => (
-          <Grid key={i} item xs={12} md={3}>
-            <Paper sx={{ p: 2.5, borderRadius: 3 }}>
-              <Typography variant="overline" color="text.secondary">{k.label}</Typography>
-              <Typography variant="h4" fontWeight={800}>{k.value}</Typography>
-            </Paper>
-          </Grid>
-        ))}
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2.5, borderRadius: 3 }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} divider={<Divider orientation={"vertical"} flexItem sx={{ display: { xs: 'none', md: 'block' } }} />} spacing={{ xs: 1.5, md: 0 }}>
+              {kpis.map((k, i) => (
+                <Box key={i} sx={{ flex: 1 }}>
+                  <Typography variant="overline" color="text.secondary">{k.label}</Typography>
+                  <Typography variant="h4" fontWeight={800}>{k.value}</Typography>
+                </Box>
+              ))}
+            </Stack>
+          </Paper>
+        </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12}>
           <Paper sx={{ p: 2.5, borderRadius: 3 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
               <Typography variant="subtitle1" fontWeight={700}>Doanh thu theo ngày</Typography>
@@ -85,11 +89,11 @@ export default function AdminStats() {
                 {[7,14,30,60].map((d) => <MenuItem key={d} value={d}>{d} ngày</MenuItem>)}
               </TextField>
             </Stack>
-            <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 180 }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 200 }}>
               {(() => {
                 const maxTotal = Math.max(1, ...daily.map((d) => d.total));
                 return daily.map((d, idx) => {
-                  const h = Math.max(4, Math.round((d.total / maxTotal) * 160));
+                  const h = Math.max(4, Math.round((d.total / maxTotal) * 176));
                   return (
                     <Box key={idx} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <Box sx={{ width: '100%', bgcolor: 'primary.main', borderRadius: 1, height: `${h}px`, opacity: 0.9 }} />
@@ -102,7 +106,7 @@ export default function AdminStats() {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12}>
           <Paper sx={{ p: 2.5, borderRadius: 3 }}>
             <Typography variant="subtitle1" gutterBottom fontWeight={700}>Đơn hàng theo trạng thái</Typography>
             <Divider sx={{ my: 1 }} />
