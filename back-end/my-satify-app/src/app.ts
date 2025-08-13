@@ -18,12 +18,24 @@ app.use(helmet());
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (origin === config.frontendOrigin || (config.frontendOrigins && config.frontendOrigins.includes(origin))) {
+
+    const explicitAllowedOrigins = new Set<string>([
+      ...(config.frontendOrigins || []),
+      config.frontendOrigin,
+    ].filter(Boolean) as string[]);
+
+    if (explicitAllowedOrigins.has(origin)) {
       return callback(null, true);
     }
+
+    // Allow Vercel preview and production domains
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+
     callback(new Error('Not allowed by CORS'));
   },
-  credentials: true
+  credentials: true,
 }));
 app.use(express.json());
 app.use(cookieParser());
