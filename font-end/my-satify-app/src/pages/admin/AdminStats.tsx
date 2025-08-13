@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { Container, Grid, Paper, Typography, Stack, Divider, Chip, LinearProgress, Box } from "@mui/material";
+import { Container, Grid, Paper, Typography, Stack, Divider, Chip, LinearProgress, Box, TextField, MenuItem } from "@mui/material";
 import api from "../../api/axiosClient";
 import { formatCurrency } from "../../utils/format";
-import { useMemo } from "react";
 interface RevenueDaily { date: string; total: number }
 interface BestSeller { _id: string; name: string; image?: string; price?: number; qtySold: number; revenue: number }
 
@@ -19,19 +18,18 @@ export default function AdminStats() {
   const [error, setError] = useState<string>("");
   const [daily, setDaily] = useState<RevenueDaily[]>([]);
   const [best, setBest] = useState<BestSeller[]>([]);
+  const [dailyDays, setDailyDays] = useState<number>(14);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const [res, dailyRes, bestRes] = await Promise.all([
+        const [res, bestRes] = await Promise.all([
           api.get<StatsResponse>("/stats"),
-          api.get<{ data: RevenueDaily[] }>("/stats/revenue_daily", { params: { days: 14 } }),
           api.get<{ data: BestSeller[] }>("/products/best_sellers", { params: { limit: 8 } })
         ]);
         if (mounted) {
           setStats(res.data);
-          setDaily(dailyRes.data.data || []);
           setBest((bestRes.data as any).data || (bestRes.data as any) || []);
         }
       } catch (e: any) {
@@ -43,18 +41,29 @@ export default function AdminStats() {
     return () => { mounted = false; };
   }, []);
 
+  // fetch revenue daily when range changes
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const dailyRes = await api.get<{ data: RevenueDaily[] }>("/stats/revenue_daily", { params: { days: dailyDays } });
+        if (mounted) setDaily(dailyRes.data.data || []);
+      } catch {}
+    })();
+    return () => { mounted = false; };
+  }, [dailyDays]);
+
   if (loading) return <LinearProgress sx={{ mt: 2 }} />;
   if (error) return <Typography color="error" sx={{ mt: 2 }}>{error}</Typography>;
   if (!stats) return null;
 
   const statusEntries = Object.entries(stats.orders.byStatus || {});
-
-  const kpis = useMemo(() => ([
+  const kpis = [
     { label: 'Người dùng', value: stats.users.total },
     { label: 'Sản phẩm', value: stats.products.total },
     { label: 'Đơn hàng', value: stats.orders.total },
     { label: 'Doanh thu 30 ngày', value: formatCurrency(stats.revenue.last30d) },
-  ]), [stats]);
+  ];
 
   return (
     <Container disableGutters>
@@ -70,14 +79,25 @@ export default function AdminStats() {
 
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2.5, borderRadius: 3 }}>
-            <Typography variant="subtitle1" gutterBottom fontWeight={700}>Doanh thu theo ngày (14 ngày)</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 160 }}>
-              {daily.map((d, idx) => (
-                <Box key={idx} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <Box sx={{ width: '100%', bgcolor: 'primary.main', borderRadius: 1, height: `${Math.max(6, Math.min(100, d.total))}px`, opacity: 0.8 }} />
-                  <Typography variant="caption" sx={{ mt: 0.5 }}>{d.date.slice(5)}</Typography>
-                </Box>
-              ))}
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+              <Typography variant="subtitle1" fontWeight={700}>Doanh thu theo ngày</Typography>
+              <TextField size="small" select value={dailyDays} onChange={(e) => setDailyDays(Number(e.target.value))}>
+                {[7,14,30,60].map((d) => <MenuItem key={d} value={d}>{d} ngày</MenuItem>)}
+              </TextField>
+            </Stack>
+            <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 180 }}>
+              {(() => {
+                const maxTotal = Math.max(1, ...daily.map((d) => d.total));
+                return daily.map((d, idx) => {
+                  const h = Math.max(4, Math.round((d.total / maxTotal) * 160));
+                  return (
+                    <Box key={idx} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <Box sx={{ width: '100%', bgcolor: 'primary.main', borderRadius: 1, height: `${h}px`, opacity: 0.9 }} />
+                      <Typography variant="caption" sx={{ mt: 0.5 }}>{d.date.slice(5)}</Typography>
+                    </Box>
+                  );
+                });
+              })()}
             </Box>
           </Paper>
         </Grid>
