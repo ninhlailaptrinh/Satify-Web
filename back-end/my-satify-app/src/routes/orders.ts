@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import Order from '../models/Order';
+import Product from '../models/Product';
 import { authMiddleware, requireRole } from '../middlewares/auth';
 
 const router = Router();
@@ -7,12 +8,34 @@ const router = Router();
 // POST /api/orders - create order (user)
 router.post('/', authMiddleware, async (req, res, next) => {
     try {
-        const { items } = req.body as { items: Array<{ product: string; qty: number; price: number; }> };
+        const { items } = req.body as { items: Array<{ product: string; qty: number; price?: number; }> };
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ message: 'Items is required' });
         }
-        const total = items.reduce((sum, i) => sum + i.qty * i.price, 0);
-        const created = await Order.create({ user: (req as any).user._id, items, total, status: 'created' });
+        // Normalize items and compute price from DB to avoid client tampering
+        const productIds = Array.from(new Set(items.map(i => i.product)));
+        const products = await Product.find({ _id: { $in: productIds } });
+        const map = new Map(products.map(p => [String(p._id), p]));
+
+        // Validate stock and build order items with server-side price
+        const normalizedItems: Array<{ product: any; qty: number; price: number; }> = [];
+        for (const i of items) {
+            const p = map.get(String(i.product));
+            if (!p) return res.status(400).json({ message: `Product not found: ${i.product}` });
+            const qty = Math.max(1, Number(i.qty || 0));
+            if ((p as any).stock !== undefined && (p as any).stock < qty) {
+                return res.status(400).json({ message: `Sản phẩm '${(p as any).name}' không đủ hàng` });
+            }
+            normalizedItems.push({ product: p._id, qty, price: (p as any).price });
+        }
+
+        const total = normalizedItems.reduce((sum, i) => sum + i.qty * i.price, 0);
+
+        const created = await Order.create({ user: (req as any).user._id, items: normalizedItems, total, status: 'created' });
+
+        // Decrement stock after order created
+        const bulkOps = normalizedItems.map(i => ({ updateOne: { filter: { _id: i.product }, update: { $inc: { stock: -i.qty } } } }));
+        if (bulkOps.length) await Product.bulkWrite(bulkOps);
         res.status(201).json(created);
     } catch (err) { next(err); }
 });
@@ -34,9 +57,18 @@ router.get('/', authMiddleware, requireRole('admin'), async (req, res, next) => 
         const limit = Math.min(100, Number(req.query.limit || 10));
         const q = (req.query.q as string) || '';
         const status = (req.query.status as string) || '';
+        const fromStr = (req.query.from as string) || '';
+        const toStr = (req.query.to as string) || '';
 
         const pipeline: any[] = [];
         if (status) pipeline.push({ $match: { status } });
+        if (fromStr && toStr) {
+            const from = new Date(fromStr); from.setHours(0,0,0,0);
+            const to = new Date(toStr); to.setHours(23,59,59,999);
+            if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
+                pipeline.push({ $match: { createdAt: { $gte: from, $lte: to } } });
+            }
+        }
         pipeline.push(
             { $sort: { createdAt: -1 } },
             { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
@@ -77,9 +109,18 @@ router.get('/export', authMiddleware, requireRole('admin'), async (req, res, nex
     try {
         const q = (req.query.q as string) || '';
         const status = (req.query.status as string) || '';
+        const fromStr = (req.query.from as string) || '';
+        const toStr = (req.query.to as string) || '';
 
         const pipeline: any[] = [];
         if (status) pipeline.push({ $match: { status } });
+        if (fromStr && toStr) {
+            const from = new Date(fromStr); from.setHours(0,0,0,0);
+            const to = new Date(toStr); to.setHours(23,59,59,999);
+            if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
+                pipeline.push({ $match: { createdAt: { $gte: from, $lte: to } } });
+            }
+        }
         pipeline.push(
             { $sort: { createdAt: -1 } },
             { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },

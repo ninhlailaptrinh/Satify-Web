@@ -79,6 +79,8 @@ export default function AdminOrders() {
             {['created','paid','shipped','completed','cancelled'].map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
           </TextField>
           <Button variant="outlined" onClick={exportCsv}>Xuất CSV</Button>
+          <TextField size="small" type="date" label="Từ" InputLabelProps={{ shrink: true }} onChange={(e) => { (e as any).stopPropagation?.(); setPage(1); }} sx={{ display: { xs: 'none', md: 'inline-flex' } }} />
+          <TextField size="small" type="date" label="Đến" InputLabelProps={{ shrink: true }} onChange={(e) => { (e as any).stopPropagation?.(); setPage(1); }} sx={{ display: { xs: 'none', md: 'inline-flex' } }} />
         </Stack>
       </Paper>
       <Paper sx={{ borderRadius: 3 }}>
