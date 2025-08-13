@@ -207,6 +207,27 @@ router.put('/:id/status', authMiddleware, requireRole('admin'), async (req, res,
         if (status === 'completed') update.deliveredAt = new Date();
         const updated = await Order.findByIdAndUpdate(req.params.id, update, { new: true });
         if (!updated) return res.status(404).json({ message: 'Order not found' });
+        // Send email notification on shipped/completed
+        try {
+            const populated = await Order.findById(updated._id).populate('user', 'name email');
+            const user = (populated as any)?.user;
+            if (user?.email) {
+                if (status === 'shipped') {
+                    const eta = update.estimateDeliveryDate ? new Date(update.estimateDeliveryDate).toLocaleDateString() : '';
+                    await sendMail({
+                        to: user.email,
+                        subject: `Đơn hàng #${updated._id} đã được gửi đi`,
+                        text: `Xin chào ${user.name || ''}, đơn hàng của bạn đã được gửi.\nĐơn vị vận chuyển: ${update.carrier || ''}\nMã vận đơn: ${update.trackingNumber || ''}\nDự kiến giao: ${eta}`
+                    });
+                } else if (status === 'completed') {
+                    await sendMail({
+                        to: user.email,
+                        subject: `Đơn hàng #${updated._id} đã giao thành công`,
+                        text: `Xin chào ${user.name || ''}, đơn hàng của bạn đã được giao thành công. Cảm ơn bạn đã mua sắm tại Satify!`
+                    });
+                }
+            }
+        } catch {}
         res.json(updated);
     } catch (err) { next(err); }
 });
