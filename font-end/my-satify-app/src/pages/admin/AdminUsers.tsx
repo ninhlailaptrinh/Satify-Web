@@ -49,8 +49,11 @@ export default function AdminUsers() {
 
   return (
     <Box sx={{ p: 4 }}>
-      <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 3 }}>
-        <Typography variant="h6" fontWeight={700}>Quản lý người dùng</Typography>
+      <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', gap: 2, borderRadius: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
+        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+          <Typography variant="h6" fontWeight={700}>Quản lý người dùng</Typography>
+          <Typography variant="body2" color="text.secondary">Tổng: {total}</Typography>
+        </Stack>
         <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
           <TextField size="small" placeholder="Tìm kiếm" value={q} onChange={(e) => { setPage(1); setQ(e.target.value); }} />
           <TextField select size="small" label="Quyền" value={role} onChange={(e) => { setPage(1); setRole(e.target.value); }} sx={{ minWidth: 160 }}>

@@ -47,8 +47,11 @@ export default function AdminProducts() {
 
   return (
     <Box sx={{ p: 4 }}>
-      <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 3 }}>
-        <Typography variant="h6" fontWeight={700}>Quản lý sản phẩm</Typography>
+      <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', gap: 2, borderRadius: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
+        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+          <Typography variant="h6" fontWeight={700}>Quản lý sản phẩm</Typography>
+          <Typography variant="body2" color="text.secondary">Tổng: {total}</Typography>
+        </Stack>
         <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
           <TextField size="small" placeholder="Tìm kiếm" value={q} onChange={(e) => { setPage(1); setQ(e.target.value); }} />
           <TextField size="small" select label="Danh mục" value={category} onChange={(e) => { setPage(1); setCategory(e.target.value); }} sx={{ minWidth: 160 }}>
