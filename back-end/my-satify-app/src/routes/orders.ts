@@ -92,7 +92,8 @@ router.get('/', authMiddleware, requireRole('admin'), async (req, res, next) => 
                 $facet: {
                     data: [ { $skip: (page - 1) * limit }, { $limit: limit } ],
                     meta: [ { $count: 'total' } ],
-                    sum: [ { $group: { _id: null, sum: { $sum: '$total' } } } ]
+                    sum: [ { $group: { _id: null, sum: { $sum: '$total' } } } ],
+                    byStatus: [ { $group: { _id: '$status', count: { $sum: 1 } } } ]
                 }
             }
         ]);
@@ -100,7 +101,9 @@ router.get('/', authMiddleware, requireRole('admin'), async (req, res, next) => 
         const data = result[0]?.data || [];
         const total = result[0]?.meta?.[0]?.total || 0;
         const sum = result[0]?.sum?.[0]?.sum || 0;
-        res.json({ data, meta: { page, limit, total, sum } });
+        const byStatusArr = result[0]?.byStatus || [];
+        const byStatus = byStatusArr.reduce((acc: any, cur: any) => { acc[cur._id || 'unknown'] = cur.count || 0; return acc; }, {} as Record<string, number>);
+        res.json({ data, meta: { page, limit, total, sum, byStatus } });
     } catch (err) { next(err); }
 });
 
