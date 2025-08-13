@@ -77,7 +77,10 @@ export default function OrderDetail() {
           <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} sx={{ mt: 2 }}>
           <Typography fontWeight={700}>Tổng: {formatCurrency(order.total)}</Typography>
           <Stack direction="row" spacing={1}>
-            {order.status === 'created' && <Button variant="contained">Thanh toán</Button>}
+            {order.status === 'created' && <Button variant="contained" onClick={async () => {
+              const res = await api.post(`/orders/${order._id}/pay`);
+              setOrder(res.data);
+            }}>Thanh toán</Button>}
             {(order.status === 'paid' || order.status === 'shipped') && <Button variant="outlined">Theo dõi vận chuyển</Button>}
               <Button variant="outlined" onClick={async () => {
                 const url = `${import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}/orders/${order._id}/invoice`;

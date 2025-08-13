@@ -246,6 +246,34 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
     } catch (err) { next(err); }
 });
 
+// POST /api/orders/:id/pay - mock pay (owner)
+router.post('/:id/pay', authMiddleware, async (req, res, next) => {
+    try {
+        const order = await Order.findById(req.params.id).populate('user', 'name email');
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+        const isOwner = String(order.user?._id || order.user) === String((req as any).user._id);
+        if (!isOwner) return res.status(403).json({ message: 'Forbidden' });
+        if (order.status !== 'created') return res.status(400).json({ message: 'Order already paid or not payable' });
+
+        order.status = 'paid';
+        await order.save();
+
+        // Email notification
+        try {
+            const user: any = order.user;
+            if (user?.email) {
+                await sendMail({
+                    to: user.email,
+                    subject: `Thanh toán thành công - Đơn hàng #${order._id}`,
+                    text: `Xin chào ${user.name || ''}, chúng tôi đã nhận thanh toán cho đơn hàng #${order._id}. Cảm ơn bạn!`
+                });
+            }
+        } catch {}
+
+        res.json(order);
+    } catch (err) { next(err); }
+});
+
 // GET /api/orders/:id/invoice - generate PDF invoice (owner or admin)
 router.get('/:id/invoice', authMiddleware, async (req, res, next) => {
     try {
