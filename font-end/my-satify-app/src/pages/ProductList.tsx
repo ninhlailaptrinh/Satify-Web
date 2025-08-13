@@ -98,19 +98,39 @@ export default function ProductList() {
 
     const isRangeSelected = (r: typeof priceRanges[number]) => (minPrice || '') === (r.min || '') && (maxPrice || '') === (r.max || '');
 
+    const hasActiveFilters = Boolean(
+        (q && q.length > 0) ||
+        (category && category.length > 0) ||
+        (minPrice && minPrice.length > 0) ||
+        (maxPrice && maxPrice.length > 0) ||
+        sort !== 'newest' ||
+        limit !== '12'
+    );
+
+    const clearAll = () => {
+        const next = new URLSearchParams();
+        setParams(next, { replace: true });
+    };
+
     return (
         <Box sx={{ p: { xs: 2, md: 4 } }}>
             <Typography variant="h4" mb={2}>Danh sách sản phẩm</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Tìm thấy {total} sản phẩm</Typography>
 
             {/* Quick filter chips */}
-            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mb: 2 }}>
-                {['Chó', 'Mèo', 'Phụ kiện', 'Thức ăn', 'Đồ chơi'].map((c) => (
-                    <Chip key={c} label={c} clickable color={category === c ? 'primary' : 'default'} onClick={() => onSelectCategory(c)} />
-                ))}
-                <Chip label="< 200k" clickable color={isRangeSelected(priceRanges[0]) ? 'primary' : 'default'} onClick={() => onSelectPriceRange('lt200')} />
-                <Chip label="200k - 500k" clickable color={isRangeSelected(priceRanges[1]) ? 'primary' : 'default'} onClick={() => onSelectPriceRange('200to500')} />
-                <Chip label="> 500k" clickable color={isRangeSelected(priceRanges[2]) ? 'primary' : 'default'} onClick={() => onSelectPriceRange('gt500')} />
-            </Stack>
+            <Box sx={{ position: { xs: 'sticky', md: 'static' }, top: { xs: 72, md: 'auto' }, zIndex: (t) => t.zIndex.appBar - 1, bgcolor: 'background.default', py: 1, mb: 2, borderBottom: { xs: 1, md: 0 }, borderColor: 'divider' }}>
+                <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+                    {['Chó', 'Mèo', 'Phụ kiện', 'Thức ăn', 'Đồ chơi'].map((c) => (
+                        <Chip key={c} label={c} clickable color={category === c ? 'primary' : 'default'} onClick={() => onSelectCategory(c)} />
+                    ))}
+                    <Chip label="< 200k" clickable color={isRangeSelected(priceRanges[0]) ? 'primary' : 'default'} onClick={() => onSelectPriceRange('lt200')} />
+                    <Chip label="200k - 500k" clickable color={isRangeSelected(priceRanges[1]) ? 'primary' : 'default'} onClick={() => onSelectPriceRange('200to500')} />
+                    <Chip label="> 500k" clickable color={isRangeSelected(priceRanges[2]) ? 'primary' : 'default'} onClick={() => onSelectPriceRange('gt500')} />
+                    {hasActiveFilters && (
+                        <Chip label="Xoá tất cả" onClick={clearAll} variant="outlined" color="default" />
+                    )}
+                </Stack>
+            </Box>
 
             {/* Desktop/tablet filters */}
             <Paper sx={{ p: 2, mb: 3, display: { xs: 'none', md: 'block' } }}>
