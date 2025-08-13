@@ -103,6 +103,29 @@ export default function ProductList() {
         setParams(next, { replace: true });
     };
 
+    // Purchased product ids for badge (logged-in users)
+    const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set());
+    useEffect(() => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('satify_token') : null;
+        if (!token) { setPurchasedIds(new Set()); return; }
+        (async () => {
+            try {
+                const res = await api.get('/orders/me');
+                const orders = Array.isArray(res.data) ? res.data : res.data?.data || [];
+                const ids = new Set<string>();
+                orders.forEach((o: any) => {
+                    (o.items || []).forEach((it: any) => {
+                        const pid = (it.product && (it.product._id || it.product)) || it.productId;
+                        if (pid) ids.add(String(pid));
+                    });
+                });
+                setPurchasedIds(ids);
+            } catch {
+                setPurchasedIds(new Set());
+            }
+        })();
+    }, []);
+
     const [filterOpen, setFilterOpen] = useState(false);
     const [sortOpen, setSortOpen] = useState(false);
     const [draft, setDraft] = useState({ qDraft: q, sortDraft: sort, minDraft: minPrice, maxDraft: maxPrice, limitDraft: limit, minRatingDraft: minRating });
@@ -295,7 +318,7 @@ export default function ProductList() {
                     ) : (
                         list.map((p) => (
                             <Grid item xs={12} sm={6} md={3} key={p._id}>
-                                <ProductCard id={p._id} name={p.name} price={p.price} image={p.image} ratingAvg={(p as any).ratingAvg} ratingCount={(p as any).ratingCount} />
+                                <ProductCard id={p._id} name={p.name} price={p.price} image={p.image} ratingAvg={(p as any).ratingAvg} ratingCount={(p as any).ratingCount} purchased={purchasedIds.has(p._id)} />
                             </Grid>
                         ))
                     )}
