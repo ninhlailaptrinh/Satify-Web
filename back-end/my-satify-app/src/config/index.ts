@@ -18,6 +18,11 @@ export default {
     smtpPort: Number(process.env.SMTP_PORT || 587),
     smtpUser: process.env.SMTP_USER || '',
     smtpPass: process.env.SMTP_PASS || '',
-    mailFrom: process.env.MAIL_FROM || 'no-reply@satify.local'
+    mailFrom: process.env.MAIL_FROM || 'no-reply@satify.local',
+    vnpTmnCode: process.env.VNP_TMN_CODE || '',
+    vnpHashSecret: process.env.VNP_HASH_SECRET || '',
+    vnpReturnUrl: process.env.VNP_RETURN_URL || 'http://localhost:5000/api/payments/vnpay/return',
+    vnpIpnUrl: process.env.VNP_IPN_URL || 'http://localhost:5000/api/payments/vnpay/ipn',
+    vnpPayUrl: process.env.VNP_PAY_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'
 };
 
