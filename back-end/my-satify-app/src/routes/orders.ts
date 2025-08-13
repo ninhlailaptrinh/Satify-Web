@@ -3,6 +3,7 @@ import Order from '../models/Order';
 import Product from '../models/Product';
 import { authMiddleware, requireRole } from '../middlewares/auth';
 import PDFDocument from 'pdfkit';
+import { sendMail } from '../utils/mailer';
 
 const router = Router();
 
@@ -38,6 +39,18 @@ router.post('/', authMiddleware, async (req, res, next) => {
         // Decrement stock after order created
         const bulkOps = normalizedItems.map(i => ({ updateOne: { filter: { _id: i.product }, update: { $inc: { stock: -i.qty } } } }));
         if (bulkOps.length) await Product.bulkWrite(bulkOps);
+        // Try send confirmation email with simple summary
+        try {
+            const me = await (await import('../models/User')).default.findById((req as any).user._id).select('email name');
+            if (me?.email) {
+                await sendMail({
+                    to: me.email,
+                    subject: `Xác nhận đơn hàng #${created._id}`,
+                    text: `Cảm ơn ${me.name || ''}! Tổng tiền: ${total.toLocaleString()}₫`,
+                });
+            }
+        } catch {}
+
         res.status(201).json(created);
     } catch (err) { next(err); }
 });
