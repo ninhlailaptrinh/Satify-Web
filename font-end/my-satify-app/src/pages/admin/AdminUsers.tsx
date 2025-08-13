@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../../api/axiosClient';
-import { Box, Typography, Paper, Table, TableHead, TableRow, TableCell, TableBody, Select, MenuItem, Stack, TextField, Pagination } from '@mui/material';
+import { Box, Typography, Paper, Table, TableHead, TableRow, TableCell, TableBody, Select, MenuItem, Stack, TextField, Pagination, Button } from '@mui/material';
 
 interface User { _id: string; name: string; email: string; role: 'user' | 'admin'; createdAt: string; }
 
@@ -21,6 +21,22 @@ export default function AdminUsers() {
 
   useEffect(() => { load(); }, [q, role, page]);
 
+  const exportCsv = async () => {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (role) params.set('role', role);
+    const url = `${import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}/users/export?${params.toString()}`;
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('satify_token') || ''}` }, credentials: 'include' });
+    if (!res.ok) return alert('Xuất CSV thất bại');
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `users_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   const updateRole = async (id: string, role: 'user' | 'admin') => {
     await api.put(`/users/${id}/role`, { role });
     await load();
@@ -37,6 +53,7 @@ export default function AdminUsers() {
             <MenuItem value="user">user</MenuItem>
             <MenuItem value="admin">admin</MenuItem>
           </TextField>
+          <Button variant="outlined" onClick={exportCsv}>Xuất CSV</Button>
         </Stack>
       </Stack>
       <Paper>

@@ -110,6 +110,44 @@ router.get('/', authMiddleware, requireRole('admin'), async (req, res, next) => 
   } catch (err) { next(err); }
 });
 
+// GET /api/users/export (admin) - export CSV with current filters
+router.get('/export', authMiddleware, requireRole('admin'), async (req, res, next) => {
+  try {
+    const q = (req.query.q as string) || '';
+    const role = (req.query.role as string) || '';
+
+    const filter: any = {};
+    if (q) filter.$or = [{ name: new RegExp(q, 'i') }, { email: new RegExp(q, 'i') }];
+    if (role) filter.role = role;
+
+    const rows = await User.find(filter).sort({ createdAt: -1 }).limit(5000);
+
+    const header = ['id', 'name', 'email', 'role', 'createdAt'];
+    const escape = (val: any) => {
+      if (val === null || val === undefined) return '';
+      const s = String(val).replace(/"/g, '""');
+      return `"${s}` + `"`;
+    };
+    const csvLines = [header.join(',')];
+    for (const r of rows) {
+      const line = [
+        r._id,
+        r.name || '',
+        r.email || '',
+        r.role || 'user',
+        new Date((r as any).createdAt).toISOString(),
+      ].map(escape).join(',');
+      csvLines.push(line);
+    }
+
+    const csv = '\uFEFF' + csvLines.join('\n');
+    const filename = `users_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    res.send(csv);
+  } catch (err) { next(err); }
+});
+
 // PUT /api/users/:id/role (admin)
 router.put('/:id/role', authMiddleware, requireRole('admin'), async (req, res, next) => {
   try {
