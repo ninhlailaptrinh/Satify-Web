@@ -1,4 +1,6 @@
-import { Box, Typography, Grid, TextField, MenuItem, Stack, Paper, Button, Pagination, Skeleton, Drawer, Divider, Chip, RadioGroup, FormControlLabel, Radio } from "@mui/material";
+import { Box, Typography, Grid, TextField, MenuItem, Stack, Paper, Button, Pagination, Skeleton, Drawer, Divider, Chip, RadioGroup, FormControlLabel, Radio, Breadcrumbs, Link as MuiLink, useMediaQuery } from "@mui/material";
+import Autocomplete from '@mui/material/Autocomplete';
+import { useTheme } from '@mui/material/styles';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SortIcon from '@mui/icons-material/Sort';
 import { useEffect, useMemo, useState } from "react";
@@ -25,6 +27,10 @@ export default function ProductList() {
     const maxPrice = params.get('maxPrice') || '';
     const limit = params.get('limit') || '12';
     const category = params.get('category') || '';
+
+    // responsive
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
     // Load products whenever filters change
     useEffect(() => {
@@ -82,6 +88,9 @@ export default function ProductList() {
     const [filterOpen, setFilterOpen] = useState(false);
     const [sortOpen, setSortOpen] = useState(false);
     const [draft, setDraft] = useState({ qDraft: q, sortDraft: sort, minDraft: minPrice, maxDraft: maxPrice, limitDraft: limit });
+    const [searchInput, setSearchInput] = useState(q);
+
+    useEffect(() => { setSearchInput(q); }, [q]);
 
     const openFilter = () => {
         setDraft({ qDraft: q, sortDraft: sort, minDraft: minPrice, maxDraft: maxPrice, limitDraft: limit });
@@ -114,6 +123,11 @@ export default function ProductList() {
         // union with fallback
         fallbackCategories.forEach(c => set.add(c));
         return Array.from(set);
+    }, [products]);
+
+    const productNameSuggestions = useMemo(() => {
+        const names = Array.from(new Set(products.map(p => p.name)));
+        return names.slice(0, 20);
     }, [products]);
 
     const onSelectCategory = (c: string) => {
@@ -157,6 +171,11 @@ export default function ProductList() {
             <Typography variant="h4" mb={2}>Danh sách sản phẩm</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Tìm thấy {total} sản phẩm</Typography>
 
+            <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 1.5 }}>
+                <MuiLink component={RouterLink as any} underline="hover" color="inherit" to="/">Trang chủ</MuiLink>
+                <Typography color="text.primary">{category || 'Tất cả sản phẩm'}</Typography>
+            </Breadcrumbs>
+
             {/* Quick filter chips */}
             <Box sx={{ position: { xs: 'sticky', md: 'static' }, top: { xs: 72, md: 'auto' }, zIndex: (t) => t.zIndex.appBar - 1, bgcolor: 'background.default', py: 1, mb: 2, borderBottom: { xs: 1, md: 0 }, borderColor: 'divider' }}>
                 <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
@@ -188,12 +207,16 @@ export default function ProductList() {
             {/* Desktop/tablet filters */}
             <Paper sx={{ p: 2, mb: 3, display: { xs: 'none', md: 'block' } }}>
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
-                    <TextField
-                        label="Tìm kiếm"
-                        variant="outlined"
-                        value={q}
-                        onChange={(e) => updateParam('q', e.target.value)}
-                        fullWidth
+                    <Autocomplete
+                        freeSolo
+                        options={productNameSuggestions}
+                        inputValue={searchInput}
+                        onInputChange={(_, v) => setSearchInput(v)}
+                        onChange={(_, v) => updateParam('q', String(v || ''))}
+                        renderInput={(params) => (
+                            <TextField {...params} label="Tìm kiếm" variant="outlined" fullWidth onBlur={() => updateParam('q', searchInput)} />
+                        )}
+                        sx={{ flex: 1 }}
                     />
                     <TextField select label="Sắp xếp" value={sort} onChange={(e) => updateParam('sort', e.target.value)} sx={{ minWidth: 180 }}>
                         <MenuItem value="newest">Mới nhất</MenuItem>
@@ -231,7 +254,7 @@ export default function ProductList() {
                 )}
             </Grid>
 
-            <Box mt={3} display="flex" justifyContent="center">
+            <Box mt={3} display={{ xs: 'none', md: 'flex' }} justifyContent="center">
                 <Pagination
                     page={Number(params.get('page') || 1)}
                     count={Math.max(1, Math.ceil(total / Number(params.get('limit') || 12)))}
@@ -239,6 +262,15 @@ export default function ProductList() {
                     color="primary"
                 />
             </Box>
+
+            {/* Mobile Load More */}
+            {isMobile && total > Number(limit) && (
+                <Box mt={2} display="flex" justifyContent="center">
+                    <Button variant="outlined" onClick={() => updateParam('limit', String(Math.min(Number(limit) + 12, total)))}>
+                        Tải thêm
+                    </Button>
+                </Box>
+            )}
 
             {/* Mobile bottom filter drawer */}
             <Drawer anchor="bottom" open={filterOpen} onClose={() => setFilterOpen(false)}>
