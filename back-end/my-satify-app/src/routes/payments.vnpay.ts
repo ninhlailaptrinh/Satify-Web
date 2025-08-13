@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import config from '../config';
+import Order from '../models/Order';
 
 const router = Router();
 
@@ -79,13 +80,29 @@ router.post('/ipn', async (req, res) => {
     const sorted = sortObject(params);
     const signData = new URLSearchParams(sorted as any).toString();
     const signed = crypto.createHmac('sha512', config.vnpHashSecret).update(Buffer.from(signData, 'utf-8')).digest('hex');
-    const ok = signed === secure && params.vnp_ResponseCode === '00';
-    if (ok) {
-      // TODO: lookup order by params.vnp_TxnRef, verify amount, set status paid
-      // await Order.findByIdAndUpdate(params.vnp_TxnRef, { status: 'paid' });
-      return res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
+    if (signed !== secure) {
+      return res.status(200).json({ RspCode: '97', Message: 'Invalid signature' });
     }
-    return res.status(200).json({ RspCode: '97', Message: 'Invalid signature' });
+    if (params.vnp_ResponseCode !== '00') {
+      return res.status(200).json({ RspCode: '00', Message: 'Non-success status acknowledged' });
+    }
+
+    const orderId = params.vnp_TxnRef as string;
+    const amount = Number(params.vnp_Amount || 0); // in VND x 100
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(200).json({ RspCode: '01', Message: 'Order not found' });
+    }
+    const expected = Math.round(Number(order.total || 0) * 100);
+    if (amount !== expected) {
+      return res.status(200).json({ RspCode: '04', Message: 'Invalid amount' });
+    }
+    if (order.status === 'paid' || order.status === 'shipped' || order.status === 'completed') {
+      return res.status(200).json({ RspCode: '02', Message: 'Order already confirmed' });
+    }
+    order.status = 'paid';
+    await order.save();
+    return res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
   } catch (e) {
     return res.status(200).json({ RspCode: '99', Message: 'Unknown error' });
   }
