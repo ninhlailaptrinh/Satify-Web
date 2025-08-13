@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import Product from '../models/Product';
 import { authMiddleware, requireRole } from '../middlewares/auth';
-import { listProducts, createProduct, deleteProduct, suggestProducts, bestSellers } from '../controllers/product.controller';
+import { listProducts, createProduct, deleteProduct, suggestProducts, bestSellers, exportProducts, importProducts } from '../controllers/product.controller';
+import { upload } from '../middlewares/upload.middleware';
 
 const router = Router();
 
@@ -20,6 +21,16 @@ router.get('/suggest', async (req, res, next) => {
 // GET /api/products/best_sellers?limit=8
 router.get('/best_sellers', async (req, res, next) => {
     try { await bestSellers(req, res); } catch (err) { next(err); }
+});
+
+// GET /api/products/export (admin)
+router.get('/export', authMiddleware, requireRole('admin'), async (req, res, next) => {
+    try { await exportProducts(req, res); } catch (err) { next(err); }
+});
+
+// POST /api/products/import (admin): CSV upload
+router.post('/import', authMiddleware, requireRole('admin'), upload.single('file'), async (req, res, next) => {
+    try { await importProducts(req, res); } catch (err) { next(err); }
 });
 
 // POST /api/products  (admin)

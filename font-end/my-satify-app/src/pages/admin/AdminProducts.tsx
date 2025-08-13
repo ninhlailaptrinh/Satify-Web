@@ -16,6 +16,7 @@ export default function AdminProducts() {
   const limit = 10;
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Partial<Product>>({});
+  const [file, setFile] = useState<File | null>(null);
 
   const load = async () => {
     const res = await api.get('/products', { params: { q, page, limit, category: category || undefined } });
@@ -59,6 +60,26 @@ export default function AdminProducts() {
             {['Chó','Mèo','Phụ kiện','Thức ăn','Đồ chơi','general'].map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
           </TextField>
           <Button variant="contained" onClick={() => openEdit()}>Thêm sản phẩm</Button>
+          <Button variant="outlined" onClick={async () => {
+            const params = new URLSearchParams();
+            if (q) params.set('q', q);
+            if (category) params.set('category', category);
+            const url = `${import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}/products/export?${params.toString()}`;
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('satify_token') || ''}` }, credentials: 'include' });
+            if (!res.ok) return alert('Xuất CSV thất bại');
+            const blob = await res.blob();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `products_${Date.now()}.csv`; document.body.appendChild(a); a.click(); a.remove();
+          }}>Xuất CSV</Button>
+          <Button variant="text" component="label">Nhập CSV
+            <input hidden type="file" accept=".csv" onChange={async (e) => {
+              const f = e.target.files?.[0]; if (!f) return;
+              const fd = new FormData(); fd.append('file', f);
+              const res = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}/products/import`, { method: 'POST', body: fd, headers: { 'Authorization': `Bearer ${localStorage.getItem('satify_token') || ''}` }, credentials: 'include' });
+              if (!res.ok) return alert('Nhập CSV thất bại');
+              const j = await res.json(); alert(`Tạo: ${j.created}, Cập nhật: ${j.updated}`);
+              await load();
+            }} />
+          </Button>
         </Stack>
       </Paper>
       <Paper sx={{ borderRadius: 3 }}>
