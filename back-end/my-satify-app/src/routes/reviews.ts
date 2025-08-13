@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middlewares/auth';
 import Review from '../models/Review';
+import Product from '../models/Product';
 
 const router = Router();
 
@@ -9,9 +10,6 @@ router.get('/:productId', async (req, res, next) => {
   try {
     const productId = req.params.productId;
     const list = await Review.find({ productId }).sort({ createdAt: -1 }).limit(100);
-    const stats = await Review.aggregate([
-      { $match: { productId: (list[0]?.productId || undefined) ? list[0].productId : undefined } }
-    ]);
     res.json({ data: list });
   } catch (err) { next(err); }
 });
@@ -28,6 +26,13 @@ router.post('/:productId', authMiddleware, async (req, res, next) => {
       { rating, comment: comment || '' },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
+    const agg = await Review.aggregate([
+      { $match: { productId: upsert.productId } },
+      { $group: { _id: '$productId', avg: { $avg: '$rating' }, count: { $sum: 1 } } }
+    ]);
+    if (agg.length > 0) {
+      await Product.findByIdAndUpdate(upsert.productId, { ratingAvg: agg[0].avg, ratingCount: agg[0].count });
+    }
     res.status(201).json(upsert);
   } catch (err) { next(err); }
 });

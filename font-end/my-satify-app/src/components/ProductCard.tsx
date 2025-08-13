@@ -1,4 +1,4 @@
-import { Card, CardContent, Typography, CardActions, Button, Box, IconButton, Tooltip } from "@mui/material";
+import { Card, CardContent, Typography, CardActions, Button, Box, IconButton, Tooltip, Stack, Rating } from "@mui/material";
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import { useNavigate } from "react-router-dom";
@@ -11,9 +11,11 @@ interface ProductCardProps {
     name: string;
     price: number;
     image: string;
+    ratingAvg?: number;
+    ratingCount?: number;
 }
 
-export default function ProductCard({ id, name, price, image }: ProductCardProps) {
+export default function ProductCard({ id, name, price, image, ratingAvg, ratingCount }: ProductCardProps) {
     const navigate = useNavigate();
     const { add } = useCart();
     const { isFav, toggle } = useWishlist();
@@ -37,6 +39,12 @@ export default function ProductCard({ id, name, price, image }: ProductCardProps
             </Box>
             <CardContent sx={{ flex: '0 0 auto' }}>
                 <Typography variant="subtitle1" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 48 }}>{name}</Typography>
+                {typeof ratingAvg === 'number' && typeof ratingCount === 'number' && (
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
+                        <Rating value={Number(ratingAvg)} precision={0.5} size="small" readOnly />
+                        <Typography variant="caption" color="text.secondary">({ratingCount})</Typography>
+                    </Stack>
+                )}
                 <Typography color="text.primary" sx={{ mt: 0.5, fontWeight: 700 }}>{formatCurrency(price)}</Typography>
             </CardContent>
             <CardActions sx={{ mt: 'auto', pt: 0, pb: 2, px: 2, gap: 1 }}>

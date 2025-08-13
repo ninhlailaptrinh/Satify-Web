@@ -290,7 +290,7 @@ export default function ProductList() {
                     ) : (
                         list.map((p) => (
                             <Grid item xs={12} sm={6} md={3} key={p._id}>
-                                <ProductCard id={p._id} name={p.name} price={p.price} image={p.image} />
+                                <ProductCard id={p._id} name={p.name} price={p.price} image={p.image} ratingAvg={(p as any).ratingAvg} ratingCount={(p as any).ratingCount} />
                             </Grid>
                         ))
                     )}
