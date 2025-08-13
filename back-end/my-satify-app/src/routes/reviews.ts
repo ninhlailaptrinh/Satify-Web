@@ -41,4 +41,34 @@ router.post('/:productId', authMiddleware, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET my review for a product
+router.get('/me/:productId', authMiddleware, async (req, res, next) => {
+  try {
+    const productId = req.params.productId;
+    const userId = (req as any).user._id;
+    const r = await Review.findOne({ productId, userId });
+    res.json(r || null);
+  } catch (err) { next(err); }
+});
+
+// DELETE my review
+router.delete('/:productId', authMiddleware, async (req, res, next) => {
+  try {
+    const productId = req.params.productId;
+    const userId = (req as any).user._id;
+    await Review.findOneAndDelete({ productId, userId });
+    // Recompute product rating
+    const agg = await Review.aggregate([
+      { $match: { productId: new (require('mongoose').Types.ObjectId)(productId) } },
+      { $group: { _id: '$productId', avg: { $avg: '$rating' }, count: { $sum: 1 } } }
+    ]);
+    if (agg.length > 0) {
+      await Product.findByIdAndUpdate(productId, { ratingAvg: agg[0].avg, ratingCount: agg[0].count });
+    } else {
+      await Product.findByIdAndUpdate(productId, { ratingAvg: 0, ratingCount: 0 });
+    }
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
 export default router;

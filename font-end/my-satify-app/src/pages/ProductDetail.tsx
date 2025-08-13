@@ -23,6 +23,7 @@ export default function ProductDetail() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [myRating, setMyRating] = useState<number | null>(null);
   const [myComment, setMyComment] = useState<string>('');
+  const [myReview, setMyReview] = useState<any | null>(null);
   const { add, replace } = useCart();
   const navigate = useNavigate();
 
@@ -63,6 +64,11 @@ export default function ProductDetail() {
         const res = await api.get(`/reviews/${id}`);
         const list = Array.isArray(res.data) ? res.data : res.data.data;
         setReviews(list);
+        try {
+          const me = await api.get(`/reviews/me/${id}`);
+          setMyReview(me.data || null);
+          if (me.data) { setMyRating(me.data.rating); setMyComment(me.data.comment || ''); }
+        } catch {}
       } catch {}
     };
     loadReviews();
@@ -142,6 +148,7 @@ export default function ProductDetail() {
             <Stack spacing={1}>
               <Rating value={myRating} onChange={(_, v) => setMyRating(v)} />
               <TextField multiline minRows={2} placeholder="Viết nhận xét..." value={myComment} onChange={(e) => setMyComment(e.target.value)} />
+              <Stack direction="row" spacing={1}>
               <Button variant="contained" disabled={!myRating} onClick={async () => {
                 try {
                   await api.post(`/reviews/${id}`, { rating: myRating, comment: myComment });
@@ -149,8 +156,14 @@ export default function ProductDetail() {
                   const res = await api.get(`/reviews/${id}`);
                   const list = Array.isArray(res.data) ? res.data : res.data.data;
                   setReviews(list);
+                  const me = await api.get(`/reviews/me/${id}`);
+                  setMyReview(me.data || null);
                 } catch {}
               }}>Gửi đánh giá</Button>
+              {myReview && (
+                <Button color="error" onClick={async () => { try { await api.delete(`/reviews/${id}`); setMyReview(null); setMyRating(null); setMyComment(''); const res = await api.get(`/reviews/${id}`); const list = Array.isArray(res.data) ? res.data : res.data.data; setReviews(list); } catch {} }}>Xóa đánh giá của tôi</Button>
+              )}
+              </Stack>
             </Stack>
           </Paper>
         </Grid>
