@@ -31,7 +31,8 @@ router.post('/', authMiddleware, async (req, res, next) => {
 
         const total = normalizedItems.reduce((sum, i) => sum + i.qty * i.price, 0);
 
-        const created = await Order.create({ user: (req as any).user._id, items: normalizedItems, total, status: 'created' });
+        const shippingAddress = (req.body as any).shippingAddress || {};
+        const created = await Order.create({ user: (req as any).user._id, items: normalizedItems, total, status: 'created', shippingAddress });
 
         // Decrement stock after order created
         const bulkOps = normalizedItems.map(i => ({ updateOne: { filter: { _id: i.product }, update: { $inc: { stock: -i.qty } } } }));

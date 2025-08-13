@@ -8,7 +8,13 @@ const orderSchema = new Schema({
         price: Number
     }],
     total: Number,
-    status: { type: String, default: 'created' }
+    status: { type: String, default: 'created' },
+    shippingAddress: {
+        name: String,
+        phone: String,
+        address: String,
+        note: String
+    }
 }, { timestamps: true });
 
 export default model('Order', orderSchema);
