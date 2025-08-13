@@ -77,6 +77,18 @@ router.post('/me/wishlist_share', authMiddleware, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// DELETE: revoke share token
+router.delete('/me/wishlist_share', authMiddleware, async (req, res, next) => {
+  try {
+    const user = await User.findById((req as any).user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    user.wishlistShareToken = '';
+    user.wishlistShareExpiresAt = null as any;
+    await user.save();
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
 // GET /api/users (admin) with pagination/search
 router.get('/', authMiddleware, requireRole('admin'), async (req, res, next) => {
   try {

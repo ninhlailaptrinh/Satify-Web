@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Container, Grid, Typography, Button, Stack, TextField } from '@mui/material';
+import { Box, Container, Grid, Typography, Button, Stack, TextField, MenuItem } from '@mui/material';
 import { useEffect as useReactEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
@@ -11,6 +11,7 @@ export default function Favorites() {
   const [items, setItems] = useState<any[]>([]);
   const [shareUrl, setShareUrl] = useState<string>('');
   const [shareToken, setShareToken] = useState<string>('');
+  const [ttl, setTtl] = useState<number>(60); // minutes
 
   useEffect(() => {
     const load = async () => {
@@ -26,7 +27,7 @@ export default function Favorites() {
 
   const generateShare = async () => {
     try {
-      const res = await api.post('/users/me/wishlist_share', { ttlMinutes: 60 * 24 });
+      const res = await api.post('/users/me/wishlist_share', { ttlMinutes: ttl });
       const token = res.data?.token;
       const expiresAt = res.data?.expiresAt;
       const uid = localStorage.getItem('satify_user_id');
@@ -37,6 +38,14 @@ export default function Favorites() {
     } catch {}
   };
 
+  const revokeShare = async () => {
+    try {
+      await api.delete('/users/me/wishlist_share');
+      setShareToken('');
+      setShareUrl('');
+    } catch {}
+  };
+
   return (
     <Container sx={{ py: 4 }}>
       <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ md: 'center' }} justifyContent="space-between" sx={{ mb: 2 }} spacing={2}>
@@ -44,7 +53,15 @@ export default function Favorites() {
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
           <Typography color="text.secondary">{items.length} sản phẩm</Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+            <TextField select size="small" value={ttl} onChange={(e) => setTtl(Number(e.target.value))} sx={{ width: 160 }}>
+              <MenuItem value={60}>Hết hạn: 1 giờ</MenuItem>
+              <MenuItem value={60*24}>Hết hạn: 1 ngày</MenuItem>
+              <MenuItem value={60*24*7}>Hết hạn: 7 ngày</MenuItem>
+            </TextField>
             <Button variant="outlined" onClick={generateShare}>Tạo link chia sẻ</Button>
+            {shareUrl && (
+              <Button variant="text" color="error" onClick={revokeShare}>Thu hồi link</Button>
+            )}
             {shareUrl && (
               <TextField size="small" value={shareUrl} InputProps={{ readOnly: true }} sx={{ width: { xs: '100%', sm: 360 } }} />
             )}
