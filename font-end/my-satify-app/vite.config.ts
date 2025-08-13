@@ -11,7 +11,6 @@ export default defineConfig({
                 manualChunks: {
                     react: ['react', 'react-dom', 'react-router-dom'],
                     mui: ['@mui/material', '@mui/icons-material'],
-                    lodash: ['lodash'],
                 },
             },
         },
