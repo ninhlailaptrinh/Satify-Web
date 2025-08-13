@@ -20,6 +20,9 @@ export default function AdminOrders() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Order | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [carrier, setCarrier] = useState('');
+  const [eta, setEta] = useState('');
 
   const load = async () => {
     const res = await api.get('/orders', { params: { page, limit, q: q || undefined, status: status || undefined, from: from || undefined, to: to || undefined } });
@@ -56,6 +59,10 @@ export default function AdminOrders() {
     try {
       const res = await api.get(`/orders/${id}`);
       setSelected(res.data as Order);
+      const o = res.data as any;
+      setTrackingNumber(o.trackingNumber || '');
+      setCarrier(o.carrier || '');
+      setEta(o.estimateDeliveryDate ? String(o.estimateDeliveryDate).slice(0,10) : '');
     } catch {
       setSelected(null);
     } finally {
@@ -183,6 +190,20 @@ export default function AdminOrders() {
                     <Typography variant="body2">x{it.qty} · {(it.price).toLocaleString()}₫</Typography>
                   </Box>
                 ))}
+              </Stack>
+              <Divider sx={{ my: 1.5 }} />
+              <Typography fontWeight={700}>Vận chuyển</Typography>
+              <Stack spacing={1}>
+                <TextField size="small" label="Mã vận đơn" value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} />
+                <TextField size="small" label="Đơn vị vận chuyển" value={carrier} onChange={(e) => setCarrier(e.target.value)} />
+                <TextField size="small" type="date" label="Dự kiến giao" InputLabelProps={{ shrink: true }} value={eta} onChange={(e) => setEta(e.target.value)} />
+                <Stack direction="row" spacing={1}>
+                  <Button variant="outlined" onClick={async () => {
+                    if (!selected) return;
+                    await api.put(`/orders/${selected._id}/status`, { status: selected.status, trackingNumber, carrier, estimateDeliveryDate: eta || undefined });
+                    await openDetail(selected._id);
+                  }}>Lưu vận chuyển</Button>
+                </Stack>
               </Stack>
             </Stack>
           )}
