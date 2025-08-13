@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar";
 import TopBar from "./components/TopBar";
 import Footer from "./components/Footer";
 import MobileBottomNav from "./components/MobileBottomNav";
+import Favorites from "./pages/Favorites";
 import Home from "./pages/Home";
 import ProductList from "./pages/ProductList";
 import Login from "./pages/Login";
@@ -27,6 +28,7 @@ export default function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/cart" element={<Cart />} />
+                <Route path="/favorites" element={<Favorites />} />
                 <Route path="/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
                 <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

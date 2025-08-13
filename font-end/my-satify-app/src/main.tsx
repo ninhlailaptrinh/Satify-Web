@@ -5,6 +5,7 @@ import App from './App';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import theme from './theme';
 import { CartProvider } from './context/CartContext';
+import { WishlistProvider } from './context/WishlistContext';
 import { ToastProvider } from './context/ToastContext';
 
 createRoot(document.getElementById('root')!).render(
@@ -14,7 +15,9 @@ createRoot(document.getElementById('root')!).render(
                 <CssBaseline />
                 <ToastProvider>
                     <CartProvider>
-                        <App />
+                        <WishlistProvider>
+                            <App />
+                        </WishlistProvider>
                     </CartProvider>
                 </ToastProvider>
             </ThemeProvider>

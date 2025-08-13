@@ -1,7 +1,10 @@
-import { Card, CardContent, Typography, CardActions, Button, Box } from "@mui/material";
+import { Card, CardContent, Typography, CardActions, Button, Box, IconButton, Tooltip } from "@mui/material";
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "../utils/format";
 import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
 
 interface ProductCardProps {
     id?: string;
@@ -13,6 +16,7 @@ interface ProductCardProps {
 export default function ProductCard({ id, name, price, image }: ProductCardProps) {
     const navigate = useNavigate();
     const { add } = useCart();
+    const { isFav, toggle } = useWishlist();
 
     const handleBuyNow = () => {
         add({ productId: id, name, price, image, qty: 1 });
@@ -23,6 +27,13 @@ export default function ProductCard({ id, name, price, image }: ProductCardProps
         <Card sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', ':hover': { boxShadow: '0 6px 20px rgba(0,0,0,0.12)' } }}>
             <Box sx={{ position: 'relative', width: '100%', pt: { xs: '100%', sm: '75%', md: '66.66%' }, overflow: 'hidden' }}>
                 <img src={image} alt={name} loading="lazy" decoding="async" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                <Box sx={{ position: 'absolute', top: 4, right: 4 }}>
+                    <Tooltip title={isFav(id) ? 'Bỏ yêu thích' : 'Yêu thích'}>
+                        <IconButton size="small" color={isFav(id) ? 'error' : 'default'} onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggle(id); }}>
+                            {isFav(id) ? <FavoriteIcon fontSize="small" /> : <FavoriteBorderIcon fontSize="small" />}
+                        </IconButton>
+                    </Tooltip>
+                </Box>
             </Box>
             <CardContent sx={{ flex: '0 0 auto' }}>
                 <Typography variant="subtitle1" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 48 }}>{name}</Typography>

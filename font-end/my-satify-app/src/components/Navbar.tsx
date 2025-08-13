@@ -1,6 +1,7 @@
 import { AppBar, Toolbar, Typography, IconButton, Box, Button, InputBase, Badge, Container, Stack, Drawer, List, ListItem, ListItemButton, ListItemText, Divider } from "@mui/material";
 import PetsIcon from "@mui/icons-material/Pets";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axiosClient";
@@ -99,6 +100,9 @@ export default function Navbar() {
                                 <Button color="inherit" component={Link} to="/register">Đăng ký</Button>
                             </>
                         )}
+                        <IconButton color="inherit" component={Link} to="/favorites" aria-label="Yêu thích">
+                            <FavoriteIcon />
+                        </IconButton>
                         <IconButton color="inherit" component={Link} to="/cart" aria-label="Giỏ hàng">
                             <Badge color="secondary" badgeContent={cartCount} showZero>
                                 <ShoppingCartIcon />
@@ -161,6 +165,9 @@ export default function Navbar() {
                                 </ListItem>
                             </>
                         )}
+                        <ListItem disablePadding>
+                            <ListItemButton component={Link} to="/favorites"><ListItemText primary="Yêu thích" /></ListItemButton>
+                        </ListItem>
                         <ListItem disablePadding>
                             <ListItemButton component={Link} to="/cart">
                                 <ListItemText primary={`Giỏ hàng (${cartCount})`} />
