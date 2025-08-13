@@ -77,6 +77,44 @@ router.post('/', authMiddleware, async (req, res, next) => {
     } catch (err) { next(err); }
 });
 
+// POST /api/orders/preview - compute total with coupon (no auth required)
+router.post('/preview', async (req, res, next) => {
+    try {
+        const { items } = req.body as { items: Array<{ product: string; qty: number; }> };
+        const couponCode = (req.body as any).coupon || '';
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ message: 'Items is required' });
+        }
+        const productIds = Array.from(new Set(items.map(i => i.product)));
+        const products = await Product.find({ _id: { $in: productIds } });
+        const map = new Map(products.map(p => [String(p._id), p]));
+        const normalizedItems: Array<{ product: any; qty: number; price: number; name?: string }>= [];
+        for (const i of items) {
+            const p = map.get(String(i.product));
+            if (!p) return res.status(400).json({ message: `Product not found: ${i.product}` });
+            const qty = Math.max(1, Number(i.qty || 0));
+            normalizedItems.push({ product: p._id, qty, price: (p as any).price, name: (p as any).name });
+        }
+        let total = normalizedItems.reduce((sum, i) => sum + i.qty * i.price, 0);
+        let discount = 0;
+        let applied: any = null;
+        if (couponCode) {
+            try {
+                const now = new Date();
+                const cp = await Coupon.findOne({ code: couponCode, active: true, $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }] });
+                if (cp) {
+                    const percent = Number(cp.discountPercent || 0);
+                    const amount = Number(cp.discountAmount || 0);
+                    discount = Math.max(amount, Math.round(total * percent / 100));
+                    total = Math.max(0, total - discount);
+                    applied = { code: cp.code, discount };
+                }
+            } catch {}
+        }
+        res.json({ items: normalizedItems.map(i => ({ product: i.product, name: i.name, qty: i.qty, price: i.price })), discount, total, coupon: applied });
+    } catch (err) { next(err); }
+});
+
 // GET /api/orders/me - my orders (user)
 router.get('/me', authMiddleware, async (req, res, next) => {
     try {
