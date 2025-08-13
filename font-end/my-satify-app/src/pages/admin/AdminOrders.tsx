@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../../api/axiosClient';
-import { Box, Typography, Paper, Table, TableHead, TableRow, TableCell, TableBody, Chip, MenuItem, Select, TextField, Stack, Pagination, Button } from '@mui/material';
+import { Box, Typography, Paper, Table, TableHead, TableRow, TableCell, TableBody, Chip, MenuItem, Select, TextField, Stack, Pagination, Button, Drawer, Divider } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
 
 interface OrderItem { product: string; qty: number; price: number; }
@@ -13,6 +13,9 @@ export default function AdminOrders() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const limit = 10;
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<Order | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   const load = async () => {
     const res = await api.get('/orders', { params: { page, limit, q: q || undefined, status: status || undefined } });
@@ -39,18 +42,32 @@ export default function AdminOrders() {
     a.remove();
   };
 
+  const openDetail = async (id: string) => {
+    setOpen(true);
+    setLoadingDetail(true);
+    try {
+      const res = await api.get(`/orders/${id}`);
+      setSelected(res.data as Order);
+    } catch {
+      setSelected(null);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
   const changeStatus = async (id: string, status: string) => {
     await api.put(`/orders/${id}/status`, { status });
     await load();
+    if (selected && selected._id === id) setSelected({ ...selected, status } as any);
   };
 
   const color = (s: string) => s === 'created' ? 'default' : s === 'paid' ? 'primary' : s === 'shipped' ? 'secondary' : s === 'completed' ? 'success' : 'error';
 
   return (
     <Box sx={{ p: 4 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h5">Quản lý đơn hàng</Typography>
-        <Stack direction="row" spacing={2}>
+      <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 3 }}>
+        <Typography variant="h6" fontWeight={700}>Quản lý đơn hàng</Typography>
+        <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
           <TextField size="small" placeholder="Tìm kiếm theo mã/khách" value={q} onChange={(e) => { setPage(1); setQ(e.target.value); }} />
           <TextField select size="small" label="Trạng thái" value={status} onChange={(e) => { setPage(1); setStatus(e.target.value); }} sx={{ minWidth: 160 }}>
             <MenuItem value="">Tất cả</MenuItem>
@@ -58,8 +75,8 @@ export default function AdminOrders() {
           </TextField>
           <Button variant="outlined" onClick={exportCsv}>Xuất CSV</Button>
         </Stack>
-      </Stack>
-      <Paper>
+      </Paper>
+      <Paper sx={{ borderRadius: 3 }}>
         <Table>
           <TableHead>
             <TableRow>
@@ -73,7 +90,7 @@ export default function AdminOrders() {
           </TableHead>
           <TableBody>
             {list.map(o => (
-              <TableRow key={o._id}>
+              <TableRow key={o._id} hover sx={{ cursor: 'pointer' }} onClick={() => openDetail(o._id)}>
                 <TableCell>{o._id}</TableCell>
                 <TableCell>{typeof o.user === 'string' ? o.user : `${o.user?.name} (${o.user?.email})`}</TableCell>
                 <TableCell><Chip label={o.status} color={color(o.status) as any} /></TableCell>
@@ -94,6 +111,36 @@ export default function AdminOrders() {
       <Box display="flex" justifyContent="center" mt={2}>
         <Pagination page={page} count={Math.max(1, Math.ceil(total / limit))} onChange={(_, p) => setPage(p)} />
       </Box>
+
+      <Drawer anchor="right" open={open} onClose={() => setOpen(false)}>
+        <Box sx={{ width: { xs: 360, sm: 440 }, p: 2 }} role="presentation">
+          <Typography variant="h6" fontWeight={700}>Chi tiết đơn hàng</Typography>
+          <Divider sx={{ my: 1 }} />
+          {!selected || loadingDetail ? (
+            <Typography color="text.secondary">Đang tải...</Typography>
+          ) : (
+            <Stack spacing={1.5}>
+              <Typography variant="body2"><b>Mã:</b> {selected._id}</Typography>
+              <Typography variant="body2"><b>Khách:</b> {typeof selected.user === 'string' ? selected.user : `${(selected.user as any)?.name} (${(selected.user as any)?.email})`}</Typography>
+              <Typography variant="body2"><b>Tổng:</b> {selected.total.toLocaleString()}₫</Typography>
+              <Typography variant="body2"><b>Trạng thái:</b> <Chip size="small" label={selected.status} color={color(selected.status) as any} /></Typography>
+              <TextField select size="small" label="Cập nhật trạng thái" value={selected.status} onChange={(e) => changeStatus(selected._id, e.target.value)}>
+                {['created','paid','shipped','completed','cancelled'].map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+              </TextField>
+              <Divider />
+              <Typography fontWeight={700}>Sản phẩm</Typography>
+              <Stack spacing={1}>
+                {(selected.items || []).map((it, idx) => (
+                  <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2">{(it as any).product?.name || (it as any).product}</Typography>
+                    <Typography variant="body2">x{it.qty} · {(it.price).toLocaleString()}₫</Typography>
+                  </Box>
+                ))}
+              </Stack>
+            </Stack>
+          )}
+        </Box>
+      </Drawer>
     </Box>
   );
 }
