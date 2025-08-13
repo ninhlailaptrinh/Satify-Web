@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Box, Container, Grid, Typography } from '@mui/material';
 import api from '../api/axiosClient';
 import ProductCard from '../components/ProductCard';
 
 export default function FavoritesPublic() {
   const { userId } = useParams();
+  const [params] = useSearchParams();
   const [items, setItems] = useState<any[]>([]);
 
   useEffect(() => {
     const load = async () => {
       try {
         if (!userId) return;
-        const idsRes = await api.get(`/users/${userId}/wishlist_public`);
+        const token = params.get('token') || '';
+        const idsRes = await api.get(`/users/${userId}/wishlist_public`, { params: { token } });
         const ids: string[] = idsRes.data?.ids || [];
         if (ids.length === 0) { setItems([]); return; }
         const res = await api.get('/products', { params: { ids: ids.join(','), limit: ids.length } });

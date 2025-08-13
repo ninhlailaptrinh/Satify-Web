@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import User from '../models/User';
 import { authMiddleware, requireRole } from '../middlewares/auth';
 
@@ -54,9 +55,25 @@ router.put('/me/wishlist', authMiddleware, async (req, res, next) => {
 // PUBLIC: Get wishlist by user id (share link)
 router.get('/:id/wishlist_public', async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id).select('wishlist');
+    const { token } = req.query as { token?: string };
+    const user = await User.findById(req.params.id).select('wishlist wishlistShareToken wishlistShareExpiresAt');
     if (!user) return res.status(404).json({ message: 'User not found' });
+    const ok = user.wishlistShareToken && token === user.wishlistShareToken && (!user.wishlistShareExpiresAt || user.wishlistShareExpiresAt > new Date());
+    if (!ok) return res.status(403).json({ message: 'Link hết hạn hoặc không hợp lệ' });
     res.json({ ids: (user as any).wishlist || [] });
+  } catch (err) { next(err); }
+});
+
+// POST: generate share token (auth)
+router.post('/me/wishlist_share', authMiddleware, async (req, res, next) => {
+  try {
+    const user = await User.findById((req as any).user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const ttlMinutes = Math.max(5, Math.min(7 * 24 * 60, Number(req.body.ttlMinutes || 60))); // 5 minutes to 7 days
+    user.wishlistShareToken = crypto.randomBytes(12).toString('hex');
+    user.wishlistShareExpiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000);
+    await user.save();
+    res.json({ token: user.wishlistShareToken, expiresAt: user.wishlistShareExpiresAt });
   } catch (err) { next(err); }
 });
 

@@ -10,6 +10,7 @@ export default function Favorites() {
   const { ids } = useWishlist();
   const [items, setItems] = useState<any[]>([]);
   const [shareUrl, setShareUrl] = useState<string>('');
+  const [shareToken, setShareToken] = useState<string>('');
 
   useEffect(() => {
     const load = async () => {
@@ -23,14 +24,18 @@ export default function Favorites() {
     load();
   }, [ids]);
 
-  useReactEffect(() => {
+  const generateShare = async () => {
     try {
+      const res = await api.post('/users/me/wishlist_share', { ttlMinutes: 60 * 24 });
+      const token = res.data?.token;
+      const expiresAt = res.data?.expiresAt;
       const uid = localStorage.getItem('satify_user_id');
-      if (!uid) { setShareUrl(''); return; }
+      if (!uid || !token) return;
+      setShareToken(token);
       const base = window.location.origin;
-      setShareUrl(`${base}/favorites/${uid}`);
-    } catch { setShareUrl(''); }
-  }, []);
+      setShareUrl(`${base}/favorites/${uid}?token=${token}`);
+    } catch {}
+  };
 
   return (
     <Container sx={{ py: 4 }}>
@@ -38,9 +43,12 @@ export default function Favorites() {
         <Typography variant="h4">Yêu thích</Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
           <Typography color="text.secondary">{items.length} sản phẩm</Typography>
-          {shareUrl && (
-            <TextField size="small" value={shareUrl} InputProps={{ readOnly: true }} sx={{ width: { xs: '100%', sm: 360 } }} />
-          )}
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+            <Button variant="outlined" onClick={generateShare}>Tạo link chia sẻ</Button>
+            {shareUrl && (
+              <TextField size="small" value={shareUrl} InputProps={{ readOnly: true }} sx={{ width: { xs: '100%', sm: 360 } }} />
+            )}
+          </Stack>
         </Stack>
       </Stack>
       {items.length === 0 ? (

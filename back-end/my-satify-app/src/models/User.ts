@@ -7,6 +7,8 @@ export interface IUser extends Document {
     password: string;
     role: 'user' | 'admin';
     wishlist?: string[];
+    wishlistShareToken?: string;
+    wishlistShareExpiresAt?: Date;
     matchPassword(candidate: string): Promise<boolean>;
 }
 
@@ -15,7 +17,9 @@ const userSchema = new Schema<IUser>({
     email: { type: String, required: true, unique: true, index: true },
     password: { type: String, required: true },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
-    wishlist: { type: [String], default: [] }
+    wishlist: { type: [String], default: [] },
+    wishlistShareToken: { type: String, default: '' },
+    wishlistShareExpiresAt: { type: Date, default: null }
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {
