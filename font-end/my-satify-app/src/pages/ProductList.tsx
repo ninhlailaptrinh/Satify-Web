@@ -1,5 +1,6 @@
-import { Box, Typography, Grid, TextField, MenuItem, Stack, Paper, Button, Pagination, Skeleton, Drawer, Divider } from "@mui/material";
+import { Box, Typography, Grid, TextField, MenuItem, Stack, Paper, Button, Pagination, Skeleton, Drawer, Divider, Chip, RadioGroup, FormControlLabel, Radio } from "@mui/material";
 import FilterListIcon from '@mui/icons-material/FilterList';
+import SortIcon from '@mui/icons-material/Sort';
 import { useEffect, useMemo, useState } from "react";
 import ProductCard from "../components/ProductCard";
 import api from "../api/axiosClient";
@@ -23,12 +24,13 @@ export default function ProductList() {
     const minPrice = params.get('minPrice') || '';
     const maxPrice = params.get('maxPrice') || '';
     const limit = params.get('limit') || '12';
+    const category = params.get('category') || '';
 
     useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true);
             const page = Number(params.get('page') || 1);
-            const res = await api.get("/products", { params: { q, sort, minPrice: minPrice || undefined, maxPrice: maxPrice || undefined, page, limit: Number(limit) } });
+            const res = await api.get("/products", { params: { q, sort, category: category || undefined, minPrice: minPrice || undefined, maxPrice: maxPrice || undefined, page, limit: Number(limit) } });
             const data = Array.isArray(res.data) ? res.data : res.data.data;
             const meta = Array.isArray(res.data) ? { total: data.length, page: 1, limit: data.length } : res.data.meta;
             setProducts(data);
@@ -36,7 +38,7 @@ export default function ProductList() {
             setLoading(false);
         };
         fetchProducts();
-    }, [q, sort, minPrice, maxPrice, params]);
+    }, [q, sort, category, minPrice, maxPrice, params]);
 
     const list = useMemo(() => products, [products]);
 
@@ -47,6 +49,7 @@ export default function ProductList() {
     };
 
     const [filterOpen, setFilterOpen] = useState(false);
+    const [sortOpen, setSortOpen] = useState(false);
     const [draft, setDraft] = useState({ qDraft: q, sortDraft: sort, minDraft: minPrice, maxDraft: maxPrice, limitDraft: limit });
 
     const openFilter = () => {
@@ -67,9 +70,47 @@ export default function ProductList() {
         setFilterOpen(false);
     };
 
+    const priceRanges = [
+        { key: 'lt200', label: '< 200k', min: '', max: '200000' },
+        { key: '200to500', label: '200k - 500k', min: '200000', max: '500000' },
+        { key: 'gt500', label: '> 500k', min: '500000', max: '' },
+    ] as const;
+
+    const onSelectCategory = (c: string) => {
+        const current = params.get('category') || '';
+        updateParam('category', current === c ? '' : c);
+        updateParam('page', '1');
+    };
+
+    const onSelectPriceRange = (key: typeof priceRanges[number]['key']) => {
+        const found = priceRanges.find(r => r.key === key)!;
+        // toggle if already selected
+        const selected = (minPrice || '') === (found.min || '') && (maxPrice || '') === (found.max || '');
+        if (selected) {
+            updateParam('minPrice', '');
+            updateParam('maxPrice', '');
+        } else {
+            updateParam('minPrice', found.min);
+            updateParam('maxPrice', found.max);
+        }
+        updateParam('page', '1');
+    };
+
+    const isRangeSelected = (r: typeof priceRanges[number]) => (minPrice || '') === (r.min || '') && (maxPrice || '') === (r.max || '');
+
     return (
         <Box sx={{ p: { xs: 2, md: 4 } }}>
             <Typography variant="h4" mb={2}>Danh sách sản phẩm</Typography>
+
+            {/* Quick filter chips */}
+            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mb: 2 }}>
+                {['Chó', 'Mèo', 'Phụ kiện', 'Thức ăn', 'Đồ chơi'].map((c) => (
+                    <Chip key={c} label={c} clickable color={category === c ? 'primary' : 'default'} onClick={() => onSelectCategory(c)} />
+                ))}
+                <Chip label="< 200k" clickable color={isRangeSelected(priceRanges[0]) ? 'primary' : 'default'} onClick={() => onSelectPriceRange('lt200')} />
+                <Chip label="200k - 500k" clickable color={isRangeSelected(priceRanges[1]) ? 'primary' : 'default'} onClick={() => onSelectPriceRange('200to500')} />
+                <Chip label="> 500k" clickable color={isRangeSelected(priceRanges[2]) ? 'primary' : 'default'} onClick={() => onSelectPriceRange('gt500')} />
+            </Stack>
 
             {/* Desktop/tablet filters */}
             <Paper sx={{ p: 2, mb: 3, display: { xs: 'none', md: 'block' } }}>
@@ -95,10 +136,11 @@ export default function ProductList() {
                 </Stack>
             </Paper>
 
-            {/* Mobile filter trigger */}
-            <Box sx={{ display: { xs: 'flex', md: 'none' }, mb: 2 }}>
+            {/* Mobile filter/sort triggers */}
+            <Stack direction="row" spacing={2} sx={{ display: { xs: 'flex', md: 'none' }, mb: 2 }}>
                 <Button variant="outlined" startIcon={<FilterListIcon />} onClick={openFilter}>Bộ lọc</Button>
-            </Box>
+                <Button variant="outlined" startIcon={<SortIcon />} onClick={() => setSortOpen(true)}>Sắp xếp</Button>
+            </Stack>
 
             <Grid container spacing={2}>
                 {loading ? (
@@ -155,6 +197,22 @@ export default function ProductList() {
                             <Button variant="contained" fullWidth onClick={applyFilter}>Áp dụng</Button>
                         </Stack>
                     </Stack>
+                </Box>
+            </Drawer>
+
+            {/* Mobile bottom sort drawer */}
+            <Drawer anchor="bottom" open={sortOpen} onClose={() => setSortOpen(false)}>
+                <Box sx={{ p: 2 }}>
+                    <Typography variant="h6" sx={{ mb: 1 }}>Sắp xếp</Typography>
+                    <Divider sx={{ mb: 2 }} />
+                    <RadioGroup
+                        value={sort}
+                        onChange={(e) => { updateParam('sort', e.target.value); setSortOpen(false); }}
+                    >
+                        <FormControlLabel value="newest" control={<Radio />} label="Mới nhất" />
+                        <FormControlLabel value="price_asc" control={<Radio />} label="Giá tăng dần" />
+                        <FormControlLabel value="price_desc" control={<Radio />} label="Giá giảm dần" />
+                    </RadioGroup>
                 </Box>
             </Drawer>
         </Box>
