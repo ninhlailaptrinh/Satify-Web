@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "../utils/format";
 import { useCart } from "../context/CartContext";
 import { useWishlist } from "../context/WishlistContext";
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { Tooltip as MuiTooltip } from '@mui/material';
 
 interface ProductCardProps {
     id?: string;
@@ -13,9 +15,10 @@ interface ProductCardProps {
     image: string;
     ratingAvg?: number;
     ratingCount?: number;
+    purchased?: boolean;
 }
 
-export default function ProductCard({ id, name, price, image, ratingAvg, ratingCount }: ProductCardProps) {
+export default function ProductCard({ id, name, price, image, ratingAvg, ratingCount, purchased }: ProductCardProps) {
     const navigate = useNavigate();
     const { add } = useCart();
     const { isFav, toggle } = useWishlist();
@@ -38,7 +41,14 @@ export default function ProductCard({ id, name, price, image, ratingAvg, ratingC
                 </Box>
             </Box>
             <CardContent sx={{ flex: '0 0 auto' }}>
-                <Typography variant="subtitle1" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 48 }}>{name}</Typography>
+                <Stack direction="row" spacing={0.5} alignItems="center">
+                    <Typography variant="subtitle1" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 48, flex: 1 }}>{name}</Typography>
+                    {purchased && (
+                        <MuiTooltip title="Đã mua">
+                            <CheckCircleIcon color="success" fontSize="small" />
+                        </MuiTooltip>
+                    )}
+                </Stack>
                 {typeof ratingAvg === 'number' && typeof ratingCount === 'number' && (
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
                         <Rating value={Number(ratingAvg)} precision={0.5} size="small" readOnly />
