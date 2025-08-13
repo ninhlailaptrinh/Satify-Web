@@ -4,6 +4,7 @@ import api from "../../api/axiosClient";
 import { formatCurrency } from "../../utils/format";
 import { useMemo } from "react";
 interface RevenueDaily { date: string; total: number }
+interface BestSeller { _id: string; name: string; image?: string; price?: number; qtySold: number; revenue: number }
 
 interface StatsResponse {
   users: { total: number };
@@ -17,18 +18,21 @@ export default function AdminStats() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [daily, setDaily] = useState<RevenueDaily[]>([]);
+  const [best, setBest] = useState<BestSeller[]>([]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const [res, dailyRes] = await Promise.all([
+        const [res, dailyRes, bestRes] = await Promise.all([
           api.get<StatsResponse>("/stats"),
-          api.get<{ data: RevenueDaily[] }>("/stats/revenue_daily", { params: { days: 14 } })
+          api.get<{ data: RevenueDaily[] }>("/stats/revenue_daily", { params: { days: 14 } }),
+          api.get<{ data: BestSeller[] }>("/products/best_sellers", { params: { limit: 8 } })
         ]);
         if (mounted) {
           setStats(res.data);
           setDaily(dailyRes.data.data || []);
+          setBest((bestRes.data as any).data || (bestRes.data as any) || []);
         }
       } catch (e: any) {
         setError(e?.response?.data?.message || "Không thể tải thống kê");
@@ -86,6 +90,35 @@ export default function AdminStats() {
               {statusEntries.length === 0 && <Typography color="text.secondary">Không có dữ liệu</Typography>}
               {statusEntries.map(([status, count]) => (
                 <Chip key={status} label={`${status}: ${count}`} variant="outlined" />
+              ))}
+            </Stack>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2.5, borderRadius: 3 }}>
+            <Typography variant="subtitle1" gutterBottom fontWeight={700}>Top bán chạy</Typography>
+            <Divider sx={{ my: 1 }} />
+            <Stack spacing={1.25}>
+              {best.length === 0 && <Typography color="text.secondary">Chưa có dữ liệu</Typography>}
+              {best.map((p) => (
+                <Box key={p._id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box sx={{ width: 56, height: 56, bgcolor: '#f5f5f5', borderRadius: 1, overflow: 'hidden', flexShrink: 0 }}>
+                    {p.image ? (
+                      <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : null}
+                  </Box>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="body1" fontWeight={600} noWrap>{p.name}</Typography>
+                    {typeof p.price === 'number' && (
+                      <Typography variant="caption" color="text.secondary">{formatCurrency(p.price)}</Typography>
+                    )}
+                  </Box>
+                  <Box sx={{ ml: 'auto', textAlign: 'right' }}>
+                    <Typography variant="body2">SL: {p.qtySold}</Typography>
+                    <Typography variant="caption" color="text.secondary">DT: {formatCurrency(p.revenue || 0)}</Typography>
+                  </Box>
+                </Box>
               ))}
             </Stack>
           </Paper>
