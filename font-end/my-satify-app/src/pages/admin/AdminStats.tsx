@@ -116,19 +116,24 @@ export default function AdminStats() {
               {(() => {
                 const chartHeight = 180; // px for column area
                 const barWidth = 10; // px thickness
+                if (!daily.length) {
+                  return <Typography variant="body2" color="text.secondary">Không có dữ liệu</Typography>;
+                }
                 const maxTotal = Math.max(1, ...daily.map((d) => d.total));
-                const avg = daily.length ? daily.reduce((s, d) => s + d.total, 0) / daily.length : 0;
-                const avgH = Math.max(0, Math.round((avg / maxTotal) * chartHeight));
+                const avg = daily.reduce((s, d) => s + d.total, 0) / daily.length;
+                const avgH = avg > 0 ? Math.max(0, Math.round((avg / maxTotal) * chartHeight)) : 0;
 
                 return (
                   <>
                     {/* Average line */}
-                    <Box sx={{ position: 'absolute', left: 0, right: 0, bottom: `${avgH}px`, height: 0 }}>
-                      <Box sx={{ borderTop: '2px dashed', borderColor: 'secondary.main' }} />
-                      <Typography variant="caption" sx={{ position: 'absolute', right: 0, transform: 'translateY(-100%)', bgcolor: 'background.paper', px: 0.5, borderRadius: 0.5, color: 'text.secondary' }}>
-                        Trung bình: {formatCurrency(Math.round(avg))}
-                      </Typography>
-                    </Box>
+                    {avgH > 0 && (
+                      <Box sx={{ position: 'absolute', left: 0, right: 0, bottom: `${avgH}px`, height: 0 }}>
+                        <Box sx={{ borderTop: '2px dashed', borderColor: 'secondary.main' }} />
+                        <Typography variant="caption" sx={{ position: 'absolute', right: 0, transform: 'translateY(-100%)', bgcolor: 'background.paper', px: 0.5, borderRadius: 0.5, color: 'text.secondary' }}>
+                          Trung bình: {formatCurrency(Math.round(avg))}
+                        </Typography>
+                      </Box>
+                    )}
 
                     {/* Bars */}
                     {daily.map((d, idx) => {
