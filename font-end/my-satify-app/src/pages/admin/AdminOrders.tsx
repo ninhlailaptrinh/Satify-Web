@@ -71,6 +71,29 @@ export default function AdminOrders() {
 
   const color = (s: string) => s === 'created' ? 'default' : s === 'paid' ? 'primary' : s === 'shipped' ? 'secondary' : s === 'completed' ? 'success' : 'error';
 
+  const toIsoDate = (d: Date) => {
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  };
+
+  const setQuickRange = (preset: 'today' | '7d' | 'month' | 'clear') => {
+    const now = new Date();
+    if (preset === 'today') {
+      const s = toIsoDate(now);
+      setFrom(s); setTo(s);
+    } else if (preset === '7d') {
+      const start = new Date(now);
+      start.setDate(now.getDate() - 6);
+      setFrom(toIsoDate(start)); setTo(toIsoDate(now));
+    } else if (preset === 'month') {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      setFrom(toIsoDate(start)); setTo(toIsoDate(now));
+    } else {
+      setFrom(''); setTo('');
+    }
+    setPage(1);
+  };
+
   return (
     <Box sx={{ p: 4 }}>
       <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', gap: 2, borderRadius: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
@@ -83,7 +106,7 @@ export default function AdminOrders() {
             ))}
           </Stack>
         </Stack>
-        <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
+        <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
           <TextField size="small" placeholder="Tìm kiếm theo mã/khách" value={q} onChange={(e) => { setPage(1); setQ(e.target.value); }} />
           <TextField select size="small" label="Trạng thái" value={status} onChange={(e) => { setPage(1); setStatus(e.target.value); }} sx={{ minWidth: 160 }}>
             <MenuItem value="">Tất cả</MenuItem>
@@ -92,6 +115,12 @@ export default function AdminOrders() {
           <Button variant="outlined" onClick={exportCsv}>Xuất CSV</Button>
           <TextField size="small" type="date" label="Từ" InputLabelProps={{ shrink: true }} value={from} onChange={(e) => { (e as any).stopPropagation?.(); setFrom(e.target.value); setPage(1); }} sx={{ display: { xs: 'none', md: 'inline-flex' } }} />
           <TextField size="small" type="date" label="Đến" InputLabelProps={{ shrink: true }} value={to} onChange={(e) => { (e as any).stopPropagation?.(); setTo(e.target.value); setPage(1); }} sx={{ display: { xs: 'none', md: 'inline-flex' } }} />
+          <Stack direction="row" spacing={0.5} sx={{ ml: { xs: 0, md: 1 } }}>
+            <Button size="small" variant="text" onClick={() => setQuickRange('today')}>Hôm nay</Button>
+            <Button size="small" variant="text" onClick={() => setQuickRange('7d')}>7 ngày</Button>
+            <Button size="small" variant="text" onClick={() => setQuickRange('month')}>Tháng này</Button>
+            <Button size="small" color="inherit" variant="text" onClick={() => setQuickRange('clear')}>Xóa</Button>
+          </Stack>
         </Stack>
       </Paper>
       <Paper sx={{ borderRadius: 3 }}>
