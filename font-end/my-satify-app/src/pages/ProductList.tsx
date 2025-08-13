@@ -186,7 +186,7 @@ export default function ProductList() {
             </Breadcrumbs>
 
             {/* Quick filter chips */}
-            <Box sx={{ position: { xs: 'sticky', md: 'static' }, top: { xs: 72, md: 'auto' }, zIndex: (t) => t.zIndex.appBar - 1, bgcolor: 'background.default', py: 1, mb: 2, borderBottom: { xs: 1, md: 0 }, borderColor: 'divider' }}>
+            <Box sx={{ position: { xs: 'sticky', md: 'static' }, top: { xs: 72, md: 'auto' }, zIndex: (t) => t.zIndex.appBar - 1, bgcolor: 'background.default', py: 1, mb: 2, borderBottom: { xs: 1, md: 0 }, borderColor: 'divider', boxShadow: { xs: 1, md: 'none' } }}>
                 <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                     {dynamicCategories.map((c) => (
                         <Chip key={c} label={c} clickable color={category === c ? 'primary' : 'default'} onClick={() => onSelectCategory(c)} />
@@ -247,21 +247,29 @@ export default function ProductList() {
                 <Button variant="outlined" startIcon={<SortIcon />} onClick={() => setSortOpen(true)}>Sắp xếp</Button>
             </Stack>
 
-            <Grid container spacing={2}>
-                {loading ? (
-                    Array.from({ length: Number(limit) }).map((_, i) => (
-                        <Grid item xs={12} sm={6} md={3} key={i}>
-                            <Skeleton variant="rectangular" width={'100%'} height={260} />
-                        </Grid>
-                    ))
-                ) : (
-                    list.map((p) => (
-                        <Grid item xs={12} sm={6} md={3} key={p._id}>
-                            <ProductCard id={p._id} name={p.name} price={p.price} image={p.image} />
-                        </Grid>
-                    ))
-                )}
-            </Grid>
+            {/* Results grid or empty state */}
+            {(!loading && list.length === 0) ? (
+                <Paper sx={{ p: 3, textAlign: 'center' }}>
+                    <Typography sx={{ mb: 1 }}>Không tìm thấy sản phẩm phù hợp.</Typography>
+                    <Button variant="outlined" onClick={() => setParams(new URLSearchParams(), { replace: true })}>Xoá tất cả bộ lọc</Button>
+                </Paper>
+            ) : (
+                <Grid container spacing={2}>
+                    {loading ? (
+                        Array.from({ length: Number(limit) }).map((_, i) => (
+                            <Grid item xs={12} sm={6} md={3} key={i}>
+                                <Skeleton variant="rectangular" sx={{ width: '100%', height: { xs: 220, md: 260 } }} />
+                            </Grid>
+                        ))
+                    ) : (
+                        list.map((p) => (
+                            <Grid item xs={12} sm={6} md={3} key={p._id}>
+                                <ProductCard id={p._id} name={p.name} price={p.price} image={p.image} />
+                            </Grid>
+                        ))
+                    )}
+                </Grid>
+            )}
 
             <Box mt={3} display={{ xs: 'none', md: 'flex' }} justifyContent="center">
                 <Pagination
@@ -275,7 +283,7 @@ export default function ProductList() {
             {/* Mobile Load More */}
             {isMobile && total > Number(limit) && (
                 <Box mt={2} display="flex" justifyContent="center">
-                    <Button variant="outlined" onClick={() => updateParam('limit', String(Math.min(Number(limit) + 12, total)))}>
+                    <Button variant="outlined" onClick={() => { updateParam('limit', String(Math.min(Number(limit) + 12, total))); updateParam('page', '1'); }}>
                         Tải thêm
                     </Button>
                 </Box>

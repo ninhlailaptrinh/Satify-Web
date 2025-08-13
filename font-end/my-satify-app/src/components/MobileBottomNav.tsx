@@ -42,7 +42,7 @@ export default function MobileBottomNav() {
   };
 
   return (
-    <Paper elevation={3} sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, display: { xs: 'block', md: 'none' }, zIndex: (t) => t.zIndex.appBar }}>
+    <Paper elevation={3} sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, display: { xs: 'block', md: 'none' }, zIndex: (t) => t.zIndex.appBar + 1 }}>
       <BottomNavigation value={value} onChange={onChange} showLabels>
         <BottomNavigationAction label="Trang chủ" value="home" icon={<HomeIcon />} />
         <BottomNavigationAction label="Danh mục" value="categories" icon={<CategoryIcon />} />

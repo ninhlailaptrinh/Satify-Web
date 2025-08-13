@@ -26,7 +26,7 @@ export default function ProductCard({ id, name, price, image }: ProductCardProps
             </Box>
             <CardContent sx={{ flex: '0 0 auto' }}>
                 <Typography variant="subtitle1" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 48 }}>{name}</Typography>
-                <Typography color="text.secondary" sx={{ mt: 0.5, fontWeight: 600 }}>{formatCurrency(price)}</Typography>
+                <Typography color="text.primary" sx={{ mt: 0.5, fontWeight: 700 }}>{formatCurrency(price)}</Typography>
             </CardContent>
             <CardActions sx={{ mt: 'auto', pt: 0, pb: 2, px: 2, gap: 1 }}>
                 <Button fullWidth size="small" onClick={() => id && navigate(`/products/${id}`)}>Chi tiết</Button>
