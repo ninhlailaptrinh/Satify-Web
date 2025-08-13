@@ -8,6 +8,7 @@ export const listProducts = async (req: Request, res: Response) => {
     const minPrice = req.query.minPrice ? Number(req.query.minPrice) : undefined;
     const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : undefined;
     const sort = (req.query.sort as string) || 'newest';
+    const minRating = req.query.minRating ? Number(req.query.minRating) : undefined;
     const page = Math.max(1, Number(req.query.page || 1));
     const limit = Math.min(100, Number(req.query.limit || 12));
 
@@ -22,6 +23,9 @@ export const listProducts = async (req: Request, res: Response) => {
         filter.price = {};
         if (minPrice !== undefined) filter.price.$gte = minPrice;
         if (maxPrice !== undefined) filter.price.$lte = maxPrice;
+    }
+    if (minRating !== undefined) {
+        filter.ratingAvg = { $gte: minRating };
     }
 
     let sortOpt: any = { createdAt: -1 };

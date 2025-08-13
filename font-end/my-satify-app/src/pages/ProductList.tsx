@@ -28,6 +28,7 @@ export default function ProductList() {
     const maxPrice = params.get('maxPrice') || '';
     const limit = params.get('limit') || '12';
     const category = params.get('category') || '';
+    const minRating = params.get('minRating') || '';
 
     // responsive
     const theme = useTheme();
@@ -38,7 +39,7 @@ export default function ProductList() {
         const fetchProducts = async () => {
             setLoading(true);
             const page = Number(params.get('page') || 1);
-            const res = await api.get("/products", { params: { q, sort, category: category || undefined, minPrice: minPrice || undefined, maxPrice: maxPrice || undefined, page, limit: Number(limit) } });
+            const res = await api.get("/products", { params: { q, sort, category: category || undefined, minPrice: minPrice || undefined, maxPrice: maxPrice || undefined, minRating: minRating || undefined, page, limit: Number(limit) } });
             const data = Array.isArray(res.data) ? res.data : res.data.data;
             const meta = Array.isArray(res.data) ? { total: data.length, page: 1, limit: data.length } : res.data.meta;
             setProducts(data);
@@ -46,7 +47,7 @@ export default function ProductList() {
             setLoading(false);
         };
         fetchProducts();
-    }, [q, sort, category, minPrice, maxPrice, params]);
+    }, [q, sort, category, minPrice, maxPrice, minRating, params]);
 
     // Infinite scroll for mobile: increment limit when reaching anchor
     useEffect(() => {
@@ -104,23 +105,24 @@ export default function ProductList() {
 
     const [filterOpen, setFilterOpen] = useState(false);
     const [sortOpen, setSortOpen] = useState(false);
-    const [draft, setDraft] = useState({ qDraft: q, sortDraft: sort, minDraft: minPrice, maxDraft: maxPrice, limitDraft: limit });
+    const [draft, setDraft] = useState({ qDraft: q, sortDraft: sort, minDraft: minPrice, maxDraft: maxPrice, limitDraft: limit, minRatingDraft: minRating });
     const [searchInput, setSearchInput] = useState(q);
 
     useEffect(() => { setSearchInput(q); }, [q]);
 
     const openFilter = () => {
-        setDraft({ qDraft: q, sortDraft: sort, minDraft: minPrice, maxDraft: maxPrice, limitDraft: limit });
+        setDraft({ qDraft: q, sortDraft: sort, minDraft: minPrice, maxDraft: maxPrice, limitDraft: limit, minRatingDraft: minRating });
         setFilterOpen(true);
     };
     const applyFilter = () => {
         const next = new URLSearchParams(params);
-        const { qDraft, sortDraft, minDraft, maxDraft, limitDraft } = draft;
+        const { qDraft, sortDraft, minDraft, maxDraft, limitDraft, minRatingDraft } = draft;
         const setOrDelete = (k: string, v?: string) => { if (v && v.length > 0) next.set(k, v); else next.delete(k); };
         setOrDelete('q', qDraft);
         setOrDelete('sort', sortDraft);
         setOrDelete('minPrice', minDraft);
         setOrDelete('maxPrice', maxDraft);
+        setOrDelete('minRating', minRatingDraft);
         setOrDelete('limit', limitDraft);
         next.delete('page');
         setParams(next, { replace: true });
@@ -192,6 +194,7 @@ export default function ProductList() {
         (category && category.length > 0) ||
         (minPrice && minPrice.length > 0) ||
         (maxPrice && maxPrice.length > 0) ||
+        (minRating && minRating.length > 0) ||
         sort !== 'newest' ||
         limit !== '12'
     );
@@ -235,6 +238,7 @@ export default function ProductList() {
                         <Chip label={`Giá: ${minPrice ? `${Number(minPrice).toLocaleString()}₫` : '0₫'} - ${maxPrice ? `${Number(maxPrice).toLocaleString()}₫` : '∞'}`} onDelete={() => { updateParam('minPrice', ''); updateParam('maxPrice', ''); }} />
                     )}
                     {sort !== 'newest' && <Chip label={`Sắp xếp: ${sort === 'price_asc' ? 'Giá tăng' : 'Giá giảm'}`} onDelete={() => updateParam('sort', 'newest')} />}
+                    {minRating && <Chip label={`Đánh giá: ≥ ${minRating}★`} onDelete={() => updateParam('minRating', '')} />}
                     {limit !== '12' && <Chip label={`Hiển thị: ${limit}/trang`} onDelete={() => updateParam('limit', '12')} />}
                 </Stack>
             )}
@@ -333,6 +337,9 @@ export default function ProductList() {
                             <TextField label="Giá từ" type="number" value={draft.minDraft} onChange={(e) => setDraft((d) => ({ ...d, minDraft: e.target.value }))} fullWidth />
                             <TextField label="đến" type="number" value={draft.maxDraft} onChange={(e) => setDraft((d) => ({ ...d, maxDraft: e.target.value }))} fullWidth />
                         </Stack>
+                        <TextField select label="Đánh giá tối thiểu" value={draft.minRatingDraft} onChange={(e) => setDraft((d) => ({ ...d, minRatingDraft: e.target.value }))}>
+                            {[5,4.5,4,3.5,3].map(v => <MenuItem key={v} value={String(v)}>{`≥ ${v}★`}</MenuItem>)}
+                        </TextField>
                         <TextField select label="Hiển thị" value={draft.limitDraft} onChange={(e) => setDraft((d) => ({ ...d, limitDraft: e.target.value }))}>
                             {[12, 24, 48].map(n => <MenuItem key={n} value={String(n)}>{n}/trang</MenuItem>)}
                         </TextField>
