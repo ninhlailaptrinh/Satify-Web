@@ -1,4 +1,4 @@
-import { Badge, Box, BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
+import { Badge, BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import CategoryIcon from '@mui/icons-material/Category';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';

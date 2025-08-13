@@ -33,9 +33,8 @@ export default function OrderDetail() {
   if (!order) return <Box sx={{ p: 4 }}><Typography>Không tìm thấy đơn hàng</Typography></Box>;
 
   const steps = ['created','paid','shipped','completed'];
-  const stepIndex = Math.max(0, steps.indexOf(order.status));
-
-  return (
+    Math.max(0, steps.indexOf(order.status));
+    return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
       <Typography variant="h4" gutterBottom>Chi tiết đơn hàng</Typography>
       <Paper sx={{ p: 2 }}>

@@ -1,5 +1,4 @@
 import { Box, Typography, Grid, Button, Container, Paper, Stack, Skeleton } from "@mui/material";
-import { useMemo } from 'react';
 import ProductCard from "../components/ProductCard";
 import { useEffect, useState } from "react";
 import api from "../api/axiosClient";

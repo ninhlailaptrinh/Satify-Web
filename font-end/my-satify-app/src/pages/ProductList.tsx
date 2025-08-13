@@ -377,7 +377,7 @@ export default function ProductList() {
                             {[12, 24, 48].map(n => <MenuItem key={n} value={String(n)}>{n}/trang</MenuItem>)}
                         </TextField>
                         <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
-                            <Button fullWidth onClick={() => { setDraft({ qDraft: '', sortDraft: 'newest', minDraft: '', maxDraft: '', limitDraft: '12' }); }}>Xoá lọc</Button>
+                            <Button fullWidth onClick={() => { setDraft({ qDraft: '', sortDraft: 'newest', minDraft: '', maxDraft: '', limitDraft: '12',minRatingDraft: '', }); }}>Xoá lọc</Button>
                             <Button variant="contained" fullWidth onClick={applyFilter}>Áp dụng</Button>
                         </Stack>
                     </Stack>
