@@ -8,12 +8,14 @@ import api from "../api/axiosClient";
 import { useCart } from "../context/CartContext";
 import SearchIcon from '@mui/icons-material/Search';
 import { useEffect, useRef, useState } from "react";
+import { useWishlist } from "../context/WishlistContext";
 
 export default function Navbar() {
     const navigate = useNavigate();
     const token = typeof window !== 'undefined' ? localStorage.getItem('satify_token') : null;
     const role = typeof window !== 'undefined' ? localStorage.getItem('satify_role') : null;
     const { totalQuantity } = useCart();
+    const { ids: wishlistIds } = useWishlist();
     const [mobileOpen, setMobileOpen] = useState(false as boolean);
     const [searchValue, setSearchValue] = useState("");
     const appBarRef = useRef<HTMLDivElement | null>(null);
@@ -40,6 +42,7 @@ export default function Navbar() {
     };
 
     const cartCount = totalQuantity;
+    const favCount = wishlistIds.length;
     const toggleDrawer = (open: boolean) => () => setMobileOpen(open);
     const onSearch = () => {
         const query = searchValue.trim();
@@ -101,7 +104,9 @@ export default function Navbar() {
                             </>
                         )}
                         <IconButton color="inherit" component={Link} to="/favorites" aria-label="Yêu thích">
-                            <FavoriteIcon />
+                            <Badge color="secondary" badgeContent={favCount} showZero>
+                                <FavoriteIcon />
+                            </Badge>
                         </IconButton>
                         <IconButton color="inherit" component={Link} to="/cart" aria-label="Giỏ hàng">
                             <Badge color="secondary" badgeContent={cartCount} showZero>
@@ -166,7 +171,7 @@ export default function Navbar() {
                             </>
                         )}
                         <ListItem disablePadding>
-                            <ListItemButton component={Link} to="/favorites"><ListItemText primary="Yêu thích" /></ListItemButton>
+                            <ListItemButton component={Link} to="/favorites"><ListItemText primary={`Yêu thích (${favCount})`} /></ListItemButton>
                         </ListItem>
                         <ListItem disablePadding>
                             <ListItemButton component={Link} to="/cart">
