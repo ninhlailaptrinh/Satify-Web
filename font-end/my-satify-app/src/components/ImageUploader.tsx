@@ -9,6 +9,8 @@ const ImageUploader: React.FC<Props> = ({ onUploaded }) => {
     const [image, setImage] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+    const [uploading, setUploading] = useState<boolean>(false);
+    const [error, setError] = useState<string>("");
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -24,14 +26,19 @@ const ImageUploader: React.FC<Props> = ({ onUploaded }) => {
         formData.append("image", image);
 
         try {
-            const res = await api.post("/upload", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
+            setUploading(true);
+            setError("");
+            // Do NOT set Content-Type. Let Axios set boundary automatically.
+            const res = await api.post("/upload", formData);
             const url = res.data.imageUrl as string;
             setUploadedUrl(url);
             onUploaded?.(url);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Upload failed", err);
+            const msg = err?.response?.data?.message || err?.message || 'Upload failed';
+            setError(msg);
+        } finally {
+            setUploading(false);
         }
     };
 
@@ -40,7 +47,10 @@ const ImageUploader: React.FC<Props> = ({ onUploaded }) => {
             <h2>Upload ảnh</h2>
             <input type="file" accept="image/*" onChange={handleFileChange} />
             {preview && <img src={preview} alt="preview" style={{ width: "100%", marginTop: "10px" }} />}
-            <button onClick={handleUpload} style={{ marginTop: "10px" }}>Upload</button>
+            <button onClick={handleUpload} disabled={uploading || !image} style={{ marginTop: "10px" }}>
+                {uploading ? 'Đang upload...' : 'Upload'}
+            </button>
+            {error && <p style={{ color: 'red', marginTop: 8 }}>{error}</p>}
             {uploadedUrl && (
                 <div>
                     <p>Ảnh đã upload:</p>
