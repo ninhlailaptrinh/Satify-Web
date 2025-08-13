@@ -261,6 +261,7 @@ export default function ProductList() {
                         <MenuItem value="newest">Mới nhất</MenuItem>
                         <MenuItem value="price_asc">Giá tăng dần</MenuItem>
                         <MenuItem value="price_desc">Giá giảm dần</MenuItem>
+                        <MenuItem value="rating_desc">Điểm cao nhất</MenuItem>
                     </TextField>
                     <TextField label="Giá từ" type="number" value={minPrice} onChange={(e) => updateParam('minPrice', e.target.value)} sx={{ width: 140 }} />
                     <TextField label="đến" type="number" value={maxPrice} onChange={(e) => updateParam('maxPrice', e.target.value)} sx={{ width: 140 }} />
@@ -332,6 +333,7 @@ export default function ProductList() {
                             <MenuItem value="newest">Mới nhất</MenuItem>
                             <MenuItem value="price_asc">Giá tăng dần</MenuItem>
                             <MenuItem value="price_desc">Giá giảm dần</MenuItem>
+                            <MenuItem value="rating_desc">Điểm cao nhất</MenuItem>
                         </TextField>
                         <Stack direction="row" spacing={2}>
                             <TextField label="Giá từ" type="number" value={draft.minDraft} onChange={(e) => setDraft((d) => ({ ...d, minDraft: e.target.value }))} fullWidth />

@@ -32,6 +32,7 @@ export const listProducts = async (req: Request, res: Response) => {
     if (sort === 'price_asc') sortOpt = { price: 1 };
     if (sort === 'price_desc') sortOpt = { price: -1 };
     if (sort === 'newest') sortOpt = { createdAt: -1 };
+    if (sort === 'rating_desc') sortOpt = { ratingAvg: -1, ratingCount: -1, createdAt: -1 };
 
     const items = await Product.find(filter)
         .skip((page - 1) * limit)
