@@ -51,6 +51,15 @@ router.put('/me/wishlist', authMiddleware, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// PUBLIC: Get wishlist by user id (share link)
+router.get('/:id/wishlist_public', async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id).select('wishlist');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ ids: (user as any).wishlist || [] });
+  } catch (err) { next(err); }
+});
+
 // GET /api/users (admin) with pagination/search
 router.get('/', authMiddleware, requireRole('admin'), async (req, res, next) => {
   try {

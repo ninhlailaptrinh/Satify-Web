@@ -24,6 +24,7 @@ export default function Login() {
             const { accessToken, user } = res.data as any;
             localStorage.setItem("satify_token", accessToken);
             localStorage.setItem("satify_role", user.role);
+            if (user && user._id) localStorage.setItem('satify_user_id', user._id);
             showToast('Đăng nhập thành công', 'success');
             navigate(user.role === 'admin' ? "/admin" : "/");
         } catch (err: any) {

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Box, Container, Grid, Typography, Button, Stack } from '@mui/material';
+import { Box, Container, Grid, Typography, Button, Stack, TextField } from '@mui/material';
+import { useEffect as useReactEffect } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { useWishlist } from '../context/WishlistContext';
 import api from '../api/axiosClient';
@@ -7,6 +9,7 @@ import api from '../api/axiosClient';
 export default function Favorites() {
   const { ids } = useWishlist();
   const [items, setItems] = useState<any[]>([]);
+  const [shareUrl, setShareUrl] = useState<string>('');
 
   useEffect(() => {
     const load = async () => {
@@ -20,11 +23,25 @@ export default function Favorites() {
     load();
   }, [ids]);
 
+  useReactEffect(() => {
+    try {
+      const uid = localStorage.getItem('satify_user_id');
+      if (!uid) { setShareUrl(''); return; }
+      const base = window.location.origin;
+      setShareUrl(`${base}/favorites/${uid}`);
+    } catch { setShareUrl(''); }
+  }, []);
+
   return (
     <Container sx={{ py: 4 }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+      <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ md: 'center' }} justifyContent="space-between" sx={{ mb: 2 }} spacing={2}>
         <Typography variant="h4">Yêu thích</Typography>
-        <Typography color="text.secondary">{items.length} sản phẩm</Typography>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+          <Typography color="text.secondary">{items.length} sản phẩm</Typography>
+          {shareUrl && (
+            <TextField size="small" value={shareUrl} InputProps={{ readOnly: true }} sx={{ width: { xs: '100%', sm: 360 } }} />
+          )}
+        </Stack>
       </Stack>
       {items.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 6 }}>

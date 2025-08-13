@@ -38,6 +38,7 @@ export default function Navbar() {
         } catch {}
         localStorage.removeItem('satify_token');
         localStorage.removeItem('satify_role');
+        localStorage.removeItem('satify_user_id');
         navigate('/');
     };
 
