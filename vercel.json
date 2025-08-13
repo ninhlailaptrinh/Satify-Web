@@ -1,12 +1,23 @@
 {
   "version": 2,
   "builds": [
-    { "src": "back-end/my-satify-app/api/**/*.ts", "use": "@vercel/node" },
-    { "src": "font-end/my-satify-app/package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } }
+    {
+      "src": "back-end/my-satify-app/api/**/*.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "font-end/my-satify-app/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "back-end/my-satify-app/api/index.ts" },
+    { "src": "/api/(.*)", "dest": "back-end/my-satify-app/api/$1" },
     { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/(.*)", "dest": "font-end/my-satify-app/dist/index.html" }
   ]
 }
+
+
+
+
