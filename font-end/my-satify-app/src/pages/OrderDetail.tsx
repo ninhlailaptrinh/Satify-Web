@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api/axiosClient';
-import { Box, Typography, Paper, Stack, Chip, Divider, Grid, Avatar, Skeleton, Button } from '@mui/material';
+import { Box, Typography, Paper, Stack, Chip, Divider, Grid, Avatar, Skeleton, Button, Stepper, Step, StepLabel } from '@mui/material';
 import { formatCurrency } from '../utils/format';
 
 interface OrderItem { product: { _id: string; name: string; image: string }; qty: number; price: number; }
@@ -33,7 +33,7 @@ export default function OrderDetail() {
   if (!order) return <Box sx={{ p: 4 }}><Typography>Không tìm thấy đơn hàng</Typography></Box>;
 
   const steps = ['created','paid','shipped','completed'];
-    Math.max(0, steps.indexOf(order.status));
+  const activeStep = Math.max(0, steps.indexOf(order.status));
     return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
       <Typography variant="h4" gutterBottom>Chi tiết đơn hàng</Typography>
@@ -54,6 +54,21 @@ export default function OrderDetail() {
           <Chip label={order.status} color={order.status === 'created' ? 'default' : order.status === 'paid' ? 'primary' : order.status === 'shipped' ? 'secondary' : order.status === 'completed' ? 'success' : 'error'} />
         </Stack>
         <Divider sx={{ my: 2 }} />
+        {order.status !== 'cancelled' ? (
+          <Box sx={{ mb: 2 }}>
+            <Stepper activeStep={activeStep} alternativeLabel>
+              {steps.map((label) => (
+                <Step key={label}>
+                  <StepLabel>
+                    {label === 'created' ? 'Đã tạo' : label === 'paid' ? 'Đã thanh toán' : label === 'shipped' ? 'Đã gửi hàng' : 'Hoàn tất'}
+                  </StepLabel>
+                </Step>
+              ))}
+            </Stepper>
+          </Box>
+        ) : (
+          <Chip color="error" label="Đơn đã hủy" sx={{ mb: 2 }} />
+        )}
         {(order.trackingNumber || order.carrier || order.estimateDeliveryDate) && (
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2 }}>
             {order.carrier && <Chip label={`ĐVVC: ${order.carrier}`} />}
