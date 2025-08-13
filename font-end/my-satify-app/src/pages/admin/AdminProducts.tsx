@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../../api/axiosClient';
-import { Box, Typography, Paper, Table, TableHead, TableRow, TableCell, TableBody, IconButton, Stack, TextField, Button, Pagination, Chip, Drawer, Divider, MenuItem } from '@mui/material';
+import { Box, Typography, Paper, Table, TableHead, TableRow, TableCell, TableBody, IconButton, Stack, TextField, Button, Pagination, Chip, Drawer, Divider, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ImageUploader from '../../components/ImageUploader';
@@ -13,24 +13,30 @@ export default function AdminProducts() {
   const [category, setCategory] = useState<string>('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Partial<Product>>({});
   const [file, setFile] = useState<File | null>(null);
+  const [stock, setStock] = useState<string>('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
   const load = async () => {
-    const res = await api.get('/products', { params: { q, page, limit, category: category || undefined } });
+    const res = await api.get('/products', { params: { q, page, limit, category: category || undefined, stock: stock || undefined } });
     const data = Array.isArray(res.data) ? res.data : res.data.data;
     const meta = Array.isArray(res.data) ? { total: data.length } : res.data.meta;
     setList(data);
     setTotal(meta.total || data.length);
   };
 
-  useEffect(() => { load(); }, [q, page, category]);
+  useEffect(() => { load(); }, [q, page, limit, category, stock]);
 
-  const remove = async (id: string) => {
-    if (!confirm('Xóa sản phẩm?')) return;
-    await api.delete(`/products/${id}`);
+  const askRemove = (p: Product) => { setDeleteTarget(p); setConfirmOpen(true); };
+  const remove = async () => {
+    if (!deleteTarget) return setConfirmOpen(false);
+    await api.delete(`/products/${deleteTarget._id}`);
+    setConfirmOpen(false);
+    setDeleteTarget(null as any);
     await load();
   };
 
@@ -58,6 +64,14 @@ export default function AdminProducts() {
           <TextField size="small" select label="Danh mục" value={category} onChange={(e) => { setPage(1); setCategory(e.target.value); }} sx={{ minWidth: 160 }}>
             <MenuItem value="">Tất cả</MenuItem>
             {['Chó','Mèo','Phụ kiện','Thức ăn','Đồ chơi','general'].map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+          </TextField>
+          <TextField size="small" select label="Tồn kho" value={stock} onChange={(e) => { setPage(1); setStock(e.target.value); }} sx={{ minWidth: 140 }}>
+            <MenuItem value="">Tất cả</MenuItem>
+            <MenuItem value="low">Ít hàng (&lt;5)</MenuItem>
+            <MenuItem value="out">Hết hàng</MenuItem>
+          </TextField>
+          <TextField size="small" select label="Trang/Trang" value={String(limit)} onChange={(e) => { setPage(1); setLimit(Number(e.target.value) || 10); }} sx={{ minWidth: 120 }}>
+            {[10,20,50].map(n => <MenuItem key={n} value={String(n)}>{n}</MenuItem>)}
           </TextField>
           <Button variant="contained" onClick={() => openEdit()}>Thêm sản phẩm</Button>
           <Button variant="outlined" onClick={async () => {
@@ -101,10 +115,16 @@ export default function AdminProducts() {
                 <TableCell>{p.name}</TableCell>
                 <TableCell>{p.price.toLocaleString()}₫</TableCell>
                 <TableCell>{p.category ? <Chip size="small" label={p.category} /> : '-'}</TableCell>
-                <TableCell>{typeof p.stock === 'number' ? p.stock : '-'}</TableCell>
+                <TableCell>
+                  {typeof p.stock === 'number' ? (
+                    p.stock <= 0 ? <Chip size="small" color="error" label="Hết hàng" /> : (
+                      p.stock < 5 ? <Chip size="small" color="warning" label={`Ít hàng (${p.stock})`} /> : <Typography component="span">{p.stock}</Typography>
+                    )
+                  ) : '-' }
+                </TableCell>
                 <TableCell align="right">
                   <IconButton onClick={() => openEdit(p)}><EditIcon /></IconButton>
-                  <IconButton onClick={() => remove(p._id)} color="error"><DeleteIcon /></IconButton>
+                  <IconButton onClick={() => askRemove(p)} color="error"><DeleteIcon /></IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -135,6 +155,17 @@ export default function AdminProducts() {
           </Stack>
         </Box>
       </Drawer>
+
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>Xác nhận xóa</DialogTitle>
+        <DialogContent>
+          Bạn có chắc muốn xóa sản phẩm {deleteTarget?.name}?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>Hủy</Button>
+          <Button color="error" variant="contained" onClick={remove}>Xóa</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
