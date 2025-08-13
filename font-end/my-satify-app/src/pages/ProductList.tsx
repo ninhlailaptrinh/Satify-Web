@@ -26,6 +26,7 @@ export default function ProductList() {
     const limit = params.get('limit') || '12';
     const category = params.get('category') || '';
 
+    // Load products whenever filters change
     useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true);
@@ -39,6 +40,36 @@ export default function ProductList() {
         };
         fetchProducts();
     }, [q, sort, category, minPrice, maxPrice, params]);
+
+    // Persist filters to localStorage
+    useEffect(() => {
+        try {
+            if (typeof window === 'undefined') return;
+            const saved = {
+                q, sort, category, minPrice, maxPrice, limit
+            };
+            localStorage.setItem('satify_product_list_filters', JSON.stringify(saved));
+        } catch {}
+    }, [q, sort, category, minPrice, maxPrice, limit]);
+
+    // On first load, if URL has no filters, hydrate from localStorage
+    useEffect(() => {
+        try {
+            if (typeof window === 'undefined') return;
+            const hasAny = ['q','sort','category','minPrice','maxPrice','limit'].some(k => params.get(k));
+            if (hasAny) return;
+            const raw = localStorage.getItem('satify_product_list_filters');
+            if (!raw) return;
+            const parsed = JSON.parse(raw || '{}') || {};
+            const next = new URLSearchParams(params);
+            ['q','sort','category','minPrice','maxPrice','limit'].forEach((k) => {
+                const v = parsed[k];
+                if (v && typeof v === 'string' && v.length > 0) next.set(k, v);
+            });
+            if ([...next.keys()].length > 0) setParams(next, { replace: true });
+        } catch {}
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const list = useMemo(() => products, [products]);
 
@@ -75,6 +106,15 @@ export default function ProductList() {
         { key: '200to500', label: '200k - 500k', min: '200000', max: '500000' },
         { key: 'gt500', label: '> 500k', min: '500000', max: '' },
     ] as const;
+
+    const fallbackCategories = ['Chó', 'Mèo', 'Phụ kiện', 'Thức ăn', 'Đồ chơi'];
+    const dynamicCategories = useMemo(() => {
+        const set = new Set<string>();
+        products.forEach(p => { if ((p as any).category) set.add((p as any).category); });
+        // union with fallback
+        fallbackCategories.forEach(c => set.add(c));
+        return Array.from(set);
+    }, [products]);
 
     const onSelectCategory = (c: string) => {
         const current = params.get('category') || '';
@@ -120,7 +160,7 @@ export default function ProductList() {
             {/* Quick filter chips */}
             <Box sx={{ position: { xs: 'sticky', md: 'static' }, top: { xs: 72, md: 'auto' }, zIndex: (t) => t.zIndex.appBar - 1, bgcolor: 'background.default', py: 1, mb: 2, borderBottom: { xs: 1, md: 0 }, borderColor: 'divider' }}>
                 <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                    {['Chó', 'Mèo', 'Phụ kiện', 'Thức ăn', 'Đồ chơi'].map((c) => (
+                    {dynamicCategories.map((c) => (
                         <Chip key={c} label={c} clickable color={category === c ? 'primary' : 'default'} onClick={() => onSelectCategory(c)} />
                     ))}
                     <Chip label="< 200k" clickable color={isRangeSelected(priceRanges[0]) ? 'primary' : 'default'} onClick={() => onSelectPriceRange('lt200')} />
@@ -131,6 +171,19 @@ export default function ProductList() {
                     )}
                 </Stack>
             </Box>
+
+            {/* Applied filter badges */}
+            {hasActiveFilters && (
+                <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mb: 2 }}>
+                    {q && <Chip label={`Từ khóa: ${q}`} onDelete={() => updateParam('q', '')} />}
+                    {category && <Chip label={`Danh mục: ${category}`} onDelete={() => updateParam('category', '')} />}
+                    {(minPrice || maxPrice) && (
+                        <Chip label={`Giá: ${minPrice ? `${Number(minPrice).toLocaleString()}₫` : '0₫'} - ${maxPrice ? `${Number(maxPrice).toLocaleString()}₫` : '∞'}`} onDelete={() => { updateParam('minPrice', ''); updateParam('maxPrice', ''); }} />
+                    )}
+                    {sort !== 'newest' && <Chip label={`Sắp xếp: ${sort === 'price_asc' ? 'Giá tăng' : 'Giá giảm'}`} onDelete={() => updateParam('sort', 'newest')} />}
+                    {limit !== '12' && <Chip label={`Hiển thị: ${limit}/trang`} onDelete={() => updateParam('limit', '12')} />}
+                </Stack>
+            )}
 
             {/* Desktop/tablet filters */}
             <Paper sx={{ p: 2, mb: 3, display: { xs: 'none', md: 'block' } }}>
