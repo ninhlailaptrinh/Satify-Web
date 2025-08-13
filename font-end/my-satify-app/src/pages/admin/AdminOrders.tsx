@@ -12,6 +12,7 @@ export default function AdminOrders() {
   const [status, setStatus] = useState<string>('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [sum, setSum] = useState(0);
   const limit = 10;
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Order | null>(null);
@@ -22,6 +23,7 @@ export default function AdminOrders() {
     const payload = Array.isArray(res.data) ? { data: res.data, meta: { total: res.data.length } } : res.data;
     setList(payload.data);
     setTotal(payload.meta.total || payload.data.length);
+    setSum(payload.meta.sum || 0);
   };
 
   useEffect(() => { load(); }, [q, status, page]);
@@ -65,8 +67,11 @@ export default function AdminOrders() {
 
   return (
     <Box sx={{ p: 4 }}>
-      <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 3 }}>
-        <Typography variant="h6" fontWeight={700}>Quản lý đơn hàng</Typography>
+      <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', gap: 2, borderRadius: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
+        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+          <Typography variant="h6" fontWeight={700}>Quản lý đơn hàng</Typography>
+          <Typography variant="body2" color="text.secondary">Tổng: {total} • Doanh thu: {sum.toLocaleString()}₫</Typography>
+        </Stack>
         <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
           <TextField size="small" placeholder="Tìm kiếm theo mã/khách" value={q} onChange={(e) => { setPage(1); setQ(e.target.value); }} />
           <TextField select size="small" label="Trạng thái" value={status} onChange={(e) => { setPage(1); setStatus(e.target.value); }} sx={{ minWidth: 160 }}>

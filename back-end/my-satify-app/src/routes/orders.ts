@@ -59,14 +59,16 @@ router.get('/', authMiddleware, requireRole('admin'), async (req, res, next) => 
             {
                 $facet: {
                     data: [ { $skip: (page - 1) * limit }, { $limit: limit } ],
-                    meta: [ { $count: 'total' } ]
+                    meta: [ { $count: 'total' } ],
+                    sum: [ { $group: { _id: null, sum: { $sum: '$total' } } } ]
                 }
             }
         ]);
 
         const data = result[0]?.data || [];
         const total = result[0]?.meta?.[0]?.total || 0;
-        res.json({ data, meta: { page, limit, total } });
+        const sum = result[0]?.sum?.[0]?.sum || 0;
+        res.json({ data, meta: { page, limit, total, sum } });
     } catch (err) { next(err); }
 });
 
