@@ -122,7 +122,15 @@ export default function ProductList() {
         products.forEach(p => { if ((p as any).category) set.add((p as any).category); });
         // union with fallback
         fallbackCategories.forEach(c => set.add(c));
-        return Array.from(set);
+        let categories = Array.from(set);
+        try {
+            const raw = localStorage.getItem('satify_fav_categories');
+            if (raw) {
+                const fav = JSON.parse(raw) as Record<string, number>;
+                categories.sort((a, b) => (fav[b] || 0) - (fav[a] || 0));
+            }
+        } catch {}
+        return categories;
     }, [products]);
 
     const productNameSuggestions = useMemo(() => {

@@ -19,6 +19,7 @@ export default function ProductDetail() {
   const { id } = useParams();
   const [product, setProduct] = useState<ProductDto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [related, setRelated] = useState<ProductDto[]>([]);
   const { add, replace } = useCart();
   const navigate = useNavigate();
 
@@ -39,6 +40,27 @@ export default function ProductDetail() {
     };
     fetchOne();
   }, [id]);
+
+  useEffect(() => {
+    const fetchRelated = async () => {
+      try {
+        if (!product || !(product as any).category) return;
+        const res = await api.get('/products', { params: { category: (product as any).category, sort: 'newest', limit: 8 } });
+        const data = Array.isArray(res.data) ? res.data : res.data.data;
+        setRelated((data as ProductDto[]).filter((p) => p._id !== product._id));
+      } catch {}
+    };
+    fetchRelated();
+  }, [product]);
+
+  const bumpFavCategory = (cat: string) => {
+    try {
+      const raw = localStorage.getItem('satify_fav_categories');
+      const map = raw ? JSON.parse(raw) as Record<string, number> : {};
+      map[cat] = (map[cat] || 0) + 1;
+      localStorage.setItem('satify_fav_categories', JSON.stringify(map));
+    } catch {}
+  };
 
   const addToCart = () => {
     if (!product) return;
@@ -87,11 +109,32 @@ export default function ProductDetail() {
           </Stack>
           {product && (product as any).category && (
             <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-              <Chip label={(product as any).category} component={RouterLink as any} to={`/products?category=${encodeURIComponent((product as any).category)}`} clickable />
+              <Chip label={(product as any).category} onClick={() => bumpFavCategory((product as any).category)} component={RouterLink as any} to={`/products?category=${encodeURIComponent((product as any).category)}`} clickable />
             </Stack>
           )}
         </Grid>
       </Grid>
+      {related.length > 0 && (
+        <>
+          <Typography variant="h5" sx={{ mt: 4, mb: 2 }}>Sản phẩm liên quan</Typography>
+          <Grid container spacing={2}>
+            {related.map((p) => (
+              <Grid item xs={12} sm={6} md={3} key={p._id}>
+                {/* lazy import to avoid cycle not needed, direct reuse */}
+                <Button variant="text" onClick={() => navigate(`/products/${p._id}`)} sx={{ p: 0, textAlign: 'left' }}>
+                  <Box sx={{ width: '100%' }}>
+                    <Box sx={{ position: 'relative', width: '100%', pt: '66.66%', overflow: 'hidden', borderRadius: 2, boxShadow: 1 }}>
+                      <img src={p.image} alt={p.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </Box>
+                    <Typography sx={{ mt: 1, fontWeight: 600 }}>{p.name}</Typography>
+                    <Typography color="primary">{formatCurrency(p.price)}</Typography>
+                  </Box>
+                </Button>
+              </Grid>
+            ))}
+          </Grid>
+        </>
+      )}
     </Box>
   );
 }
