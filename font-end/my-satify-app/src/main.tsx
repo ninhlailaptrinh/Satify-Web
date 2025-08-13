@@ -7,6 +7,7 @@ import theme from './theme';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { ToastProvider } from './context/ToastContext';
+import './index.css';
 
 createRoot(document.getElementById('root')!).render(
     <React.StrictMode>

@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom";
+import { Box } from "@mui/material";
 import Navbar from "./components/Navbar";
 import TopBar from "./components/TopBar";
 import Footer from "./components/Footer";
@@ -19,9 +20,10 @@ import OrderDetail from "./pages/OrderDetail";
 
 export default function App() {
     return (
-        <>
+        <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             <TopBar />
             <Navbar />
+            <Box component="main" sx={{ flex: 1 }}>
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/products" element={<ProductList />} />
@@ -43,8 +45,9 @@ export default function App() {
                     }
                 />
             </Routes>
+            </Box>
             <MobileBottomNav />
             <Footer />
-        </>
+        </Box>
     );
 }
