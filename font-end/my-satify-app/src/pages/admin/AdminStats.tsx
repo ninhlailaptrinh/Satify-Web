@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Container, Grid, Paper, Typography, Stack, Divider, Chip, LinearProgress, Box, TextField, MenuItem } from "@mui/material";
+import { Container, Grid, Paper, Typography, Stack, Divider, Chip, LinearProgress, Box, TextField, MenuItem, Tooltip, Switch, FormControlLabel } from "@mui/material";
 import api from "../../api/axiosClient";
 import { formatCurrency } from "../../utils/format";
 interface RevenueDaily { date: string; total: number }
@@ -22,6 +22,9 @@ export default function AdminStats() {
   const [dailyDays, setDailyDays] = useState<number>(14);
   const [from, setFrom] = useState<string>('');
   const [to, setTo] = useState<string>('');
+  const [barWidth, setBarWidth] = useState<number>(12);
+  const [barScheme, setBarScheme] = useState<'orange' | 'blue'>('orange');
+  const [showAvg, setShowAvg] = useState<boolean>(true);
 
   useEffect(() => {
     let mounted = true;
@@ -103,19 +106,24 @@ export default function AdminStats() {
           <Paper sx={{ p: 2.5, borderRadius: 3 }}>
             <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ xs: 'stretch', md: 'center' }} justifyContent="space-between" sx={{ mb: 1 }} spacing={1}>
               <Typography variant="subtitle1" fontWeight={700}>Doanh thu theo ngày</Typography>
-              <Stack direction="row" spacing={1}>
+              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                 <TextField size="small" type="date" label="Từ" InputLabelProps={{ shrink: true }} value={from} onChange={(e) => setFrom(e.target.value)} />
                 <TextField size="small" type="date" label="Đến" InputLabelProps={{ shrink: true }} value={to} onChange={(e) => setTo(e.target.value)} />
                 <TextField size="small" select value={dailyDays} onChange={(e) => setDailyDays(Number(e.target.value))} disabled={!!(from && to)}>
                   {[7,14,30,60].map((d) => <MenuItem key={d} value={d}>{d} ngày</MenuItem>)}
                 </TextField>
-                <TextField size="small" value={''} onChange={() => {}} placeholder=" " sx={{ display: 'none' }} />
+                <TextField size="small" type="number" label="Độ dày" value={barWidth} onChange={(e) => setBarWidth(Math.max(6, Math.min(24, Number(e.target.value) || 12)))} inputProps={{ min: 6, max: 24 }} sx={{ width: 110 }} />
+                <TextField size="small" select label="Màu" value={barScheme} onChange={(e) => setBarScheme(e.target.value as any)} sx={{ width: 130 }}>
+                  <MenuItem value="orange">Cam</MenuItem>
+                  <MenuItem value="blue">Xanh</MenuItem>
+                </TextField>
+                <FormControlLabel control={<Switch checked={showAvg} onChange={(e) => setShowAvg(e.target.checked)} />} label="Đường TB" sx={{ ml: 1 }} />
               </Stack>
             </Stack>
             <Box sx={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 0.75, height: 220, overflowX: 'auto', pb: 1 }}>
               {(() => {
                 const chartHeight = 180; // px for column area
-                const barWidth = 10; // px thickness
+                const bw = Math.max(6, Math.min(24, barWidth));
                 if (!daily.length) {
                   return <Typography variant="body2" color="text.secondary">Không có dữ liệu</Typography>;
                 }
@@ -126,7 +134,7 @@ export default function AdminStats() {
                 return (
                   <>
                     {/* Average line */}
-                    {avgH > 0 && (
+                    {showAvg && avgH > 0 && (
                       <Box sx={{ position: 'absolute', left: 0, right: 0, bottom: `${avgH}px`, height: 0 }}>
                         <Box sx={{ borderTop: '2px dashed', borderColor: 'secondary.main' }} />
                         <Typography variant="caption" sx={{ position: 'absolute', right: 0, transform: 'translateY(-100%)', bgcolor: 'background.paper', px: 0.5, borderRadius: 0.5, color: 'text.secondary' }}>
@@ -138,12 +146,15 @@ export default function AdminStats() {
                     {/* Bars */}
                     {daily.map((d, idx) => {
                       const h = Math.max(4, Math.round((d.total / maxTotal) * chartHeight));
+                      const bg = barScheme === 'orange' ? 'linear-gradient(180deg, #ffb300, #ee4d2d)' : 'linear-gradient(180deg, #64b5f6, #1976d2)';
                       return (
-                        <Box key={idx} sx={{ width: barWidth, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <Box sx={{ width: '100%', height: `${h}px`, borderRadius: 1,
-                            background: 'linear-gradient(180deg, #ffb300, #ee4d2d)',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
-                          }} />
+                        <Box key={idx} sx={{ width: bw, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <Tooltip title={`${d.date}: ${formatCurrency(d.total)}`} arrow>
+                            <Box sx={{ width: '100%', height: `${h}px`, borderRadius: 1,
+                              background: bg,
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
+                            }} />
+                          </Tooltip>
                           <Typography variant="caption" sx={{ mt: 0.5, whiteSpace: 'nowrap' }}>{d.date.slice(5)}</Typography>
                         </Box>
                       );
