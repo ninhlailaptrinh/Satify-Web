@@ -11,6 +11,7 @@ import uploadRoutes from './routes/upload';
 import ordersRoutes from './routes/orders';
 import usersRoutes from './routes/users';
 import reviewsRoutes from './routes/reviews';
+import statsRoutes from './routes/stats';
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/reviews', reviewsRoutes);
+app.use('/api/stats', statsRoutes);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);

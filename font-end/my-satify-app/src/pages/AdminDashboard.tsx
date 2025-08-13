@@ -5,6 +5,7 @@ import api from "../api/axiosClient";
 import AdminProducts from "./admin/AdminProducts";
 import AdminOrders from "./admin/AdminOrders";
 import AdminUsers from "./admin/AdminUsers";
+import AdminStats from "./admin/AdminStats";
 
 export default function AdminDashboard() {
     const [tab, setTab] = useState(0);
@@ -26,16 +27,18 @@ export default function AdminDashboard() {
             </Typography>
             <Paper sx={{ mb: 3 }}>
                 <Tabs value={tab} onChange={(_, v) => setTab(v)}>
+                    <Tab label="Tổng quan" />
                     <Tab label="Sản phẩm" />
                     <Tab label="Đơn hàng" />
                     <Tab label="Người dùng" />
                     <Tab label="Tạo mới sản phẩm" />
                 </Tabs>
             </Paper>
-            {tab === 0 && <AdminProducts />}
-            {tab === 1 && <AdminOrders />}
-            {tab === 2 && <AdminUsers />}
-            {tab === 3 && (
+            {tab === 0 && <AdminStats />}
+            {tab === 1 && <AdminProducts />}
+            {tab === 2 && <AdminOrders />}
+            {tab === 3 && <AdminUsers />}
+            {tab === 4 && (
                 <Paper sx={{ p: 2 }}>
                     <Typography variant="h6" gutterBottom>Tạo sản phẩm</Typography>
                     <Stack spacing={2}>
