@@ -11,6 +11,8 @@ export default function AdminOrders() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<string>('');
   const [page, setPage] = useState(1);
+  const [from, setFrom] = useState<string>('');
+  const [to, setTo] = useState<string>('');
   const [total, setTotal] = useState(0);
   const [sum, setSum] = useState(0);
   const [byStatus, setByStatus] = useState<Record<string, number>>({});
@@ -20,7 +22,7 @@ export default function AdminOrders() {
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   const load = async () => {
-    const res = await api.get('/orders', { params: { page, limit, q: q || undefined, status: status || undefined } });
+    const res = await api.get('/orders', { params: { page, limit, q: q || undefined, status: status || undefined, from: from || undefined, to: to || undefined } });
     const payload = Array.isArray(res.data) ? { data: res.data, meta: { total: res.data.length } } : res.data;
     setList(payload.data);
     setTotal(payload.meta.total || payload.data.length);
@@ -28,12 +30,14 @@ export default function AdminOrders() {
     setByStatus(payload.meta.byStatus || {});
   };
 
-  useEffect(() => { load(); }, [q, status, page]);
+  useEffect(() => { load(); }, [q, status, page, from, to]);
 
   const exportCsv = async () => {
     const params = new URLSearchParams();
     if (q) params.set('q', q);
     if (status) params.set('status', status);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
     const url = `${import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}/orders/export?${params.toString()}`;
     const res = await fetch(url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('satify_token') || ''}` }, credentials: 'include' });
     if (!res.ok) return alert('Xuất CSV thất bại');
@@ -86,8 +90,8 @@ export default function AdminOrders() {
             {['created','paid','shipped','completed','cancelled'].map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
           </TextField>
           <Button variant="outlined" onClick={exportCsv}>Xuất CSV</Button>
-          <TextField size="small" type="date" label="Từ" InputLabelProps={{ shrink: true }} onChange={(e) => { (e as any).stopPropagation?.(); setPage(1); }} sx={{ display: { xs: 'none', md: 'inline-flex' } }} />
-          <TextField size="small" type="date" label="Đến" InputLabelProps={{ shrink: true }} onChange={(e) => { (e as any).stopPropagation?.(); setPage(1); }} sx={{ display: { xs: 'none', md: 'inline-flex' } }} />
+          <TextField size="small" type="date" label="Từ" InputLabelProps={{ shrink: true }} value={from} onChange={(e) => { (e as any).stopPropagation?.(); setFrom(e.target.value); setPage(1); }} sx={{ display: { xs: 'none', md: 'inline-flex' } }} />
+          <TextField size="small" type="date" label="Đến" InputLabelProps={{ shrink: true }} value={to} onChange={(e) => { (e as any).stopPropagation?.(); setTo(e.target.value); setPage(1); }} sx={{ display: { xs: 'none', md: 'inline-flex' } }} />
         </Stack>
       </Paper>
       <Paper sx={{ borderRadius: 3 }}>
