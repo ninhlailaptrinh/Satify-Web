@@ -10,6 +10,7 @@ import errorHandler from './middlewares/errorHandler';
 import uploadRoutes from './routes/upload';
 import ordersRoutes from './routes/orders';
 import usersRoutes from './routes/users';
+import reviewsRoutes from './routes/reviews';
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use(rateLimit({ windowMs: 60 * 1000, max: 200 }));
 app.use('/api/upload', uploadRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/reviews', reviewsRoutes);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);

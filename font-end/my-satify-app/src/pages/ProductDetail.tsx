@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../api/axiosClient";
-import { Box, Typography, Grid, Button, Skeleton, Stack, Chip, Breadcrumbs, Link as MuiLink } from "@mui/material";
+import { Box, Typography, Grid, Button, Skeleton, Stack, Chip, Breadcrumbs, Link as MuiLink, Rating, TextField, Paper } from "@mui/material";
 import { Link as RouterLink } from 'react-router-dom';
 import { formatCurrency } from "../utils/format";
 import { useCart } from "../context/CartContext";
@@ -20,6 +20,9 @@ export default function ProductDetail() {
   const [product, setProduct] = useState<ProductDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [related, setRelated] = useState<ProductDto[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [myRating, setMyRating] = useState<number | null>(null);
+  const [myComment, setMyComment] = useState<string>('');
   const { add, replace } = useCart();
   const navigate = useNavigate();
 
@@ -52,6 +55,18 @@ export default function ProductDetail() {
     };
     fetchRelated();
   }, [product]);
+
+  useEffect(() => {
+    const loadReviews = async () => {
+      try {
+        if (!id) return;
+        const res = await api.get(`/reviews/${id}`);
+        const list = Array.isArray(res.data) ? res.data : res.data.data;
+        setReviews(list);
+      } catch {}
+    };
+    loadReviews();
+  }, [id]);
 
   const bumpFavCategory = (cat: string) => {
     try {
@@ -112,8 +127,43 @@ export default function ProductDetail() {
               <Chip label={(product as any).category} onClick={() => bumpFavCategory((product as any).category)} component={RouterLink as any} to={`/products?category=${encodeURIComponent((product as any).category)}`} clickable />
             </Stack>
           )}
+
+          {/* Review form */}
+          <Paper sx={{ mt: 3, p: 2 }}>
+            <Typography variant="h6" sx={{ mb: 1 }}>Đánh giá</Typography>
+            <Stack spacing={1}>
+              <Rating value={myRating} onChange={(_, v) => setMyRating(v)} />
+              <TextField multiline minRows={2} placeholder="Viết nhận xét..." value={myComment} onChange={(e) => setMyComment(e.target.value)} />
+              <Button variant="contained" disabled={!myRating} onClick={async () => {
+                try {
+                  await api.post(`/reviews/${id}`, { rating: myRating, comment: myComment });
+                  setMyComment('');
+                  const res = await api.get(`/reviews/${id}`);
+                  const list = Array.isArray(res.data) ? res.data : res.data.data;
+                  setReviews(list);
+                } catch {}
+              }}>Gửi đánh giá</Button>
+            </Stack>
+          </Paper>
         </Grid>
       </Grid>
+      {/* Reviews list */}
+      {reviews.length > 0 && (
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h5" sx={{ mb: 2 }}>Nhận xét của khách hàng</Typography>
+          <Stack spacing={2}>
+            {reviews.map((r: any, i: number) => (
+              <Paper key={i} sx={{ p: 2 }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} justifyContent="space-between">
+                  <Rating value={r.rating} readOnly size="small" />
+                  <Typography variant="caption" color="text.secondary">{new Date(r.createdAt).toLocaleString()}</Typography>
+                </Stack>
+                {r.comment && <Typography sx={{ mt: 1 }}>{r.comment}</Typography>}
+              </Paper>
+            ))}
+          </Stack>
+        </Box>
+      )}
       {related.length > 0 && (
         <>
           <Typography variant="h5" sx={{ mt: 4, mb: 2 }}>Sản phẩm liên quan</Typography>
